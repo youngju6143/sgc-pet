@@ -387,16 +387,19 @@ function applyOverride(id, rows, palette) {
   try {
     data = JSON.parse(fs.readFileSync(overrideFile(id), "utf8"));
   } catch (err) {
-    if (err.code !== "ENOENT") console.warn(`  ⚠︎ ${id}: 수정본을 못 읽었다 — ${err.message}`);
-    return rows;
+    if (err.code !== "ENOENT") return { rows, note: `수정본을 못 읽었다 — ${err.message}` };
+    return { rows };
   }
-  if (!data.cells?.length) return rows;
+  if (!data.cells?.length) return { rows };
   if (data.width !== rows[0].length || data.height !== rows.length) {
-    console.warn(
-      `  ⚠︎ ${id}: 수정본은 ${data.width}x${data.height} 기준인데 지금은 ` +
+    // 얼굴 폭을 맞추느라 여러 번 뽑는 도중에도 불리므로, 여기서 바로 찍지 않고
+    // 최종 결과에만 메모를 달아 호출한 쪽이 한 번만 알리게 한다.
+    return {
+      rows,
+      note:
+        `수정본은 ${data.width}x${data.height} 기준인데 결과가 ` +
         `${rows[0].length}x${rows.length} 라 건너뛴다 (tools/overrides/${id}.json)`,
-    );
-    return rows;
+    };
   }
 
   const keyOf = (hex) => {
@@ -409,16 +412,15 @@ function applyOverride(id, rows, palette) {
   };
 
   const grid = rows.map((r) => r.split(""));
-  let n = 0;
+  let applied = 0;
   for (const [x, y, hex] of data.cells) {
     if (!grid[y] || grid[y][x] === undefined) continue;
     const key = hex === null ? "." : keyOf(hex);
     if (!key) continue;
     grid[y][x] = key;
-    n++;
+    applied++;
   }
-  if (n) console.log(`  · ${id}: 손수정 ${n}칸 적용`);
-  return grid.map((r) => r.join(""));
+  return { rows: grid.map((r) => r.join("")), applied };
 }
 
 const silhouetteWidth = (row) => {
@@ -512,7 +514,8 @@ export function extractOne(src, gh = TARGET_HEIGHT) {
 
   // 손수정본은 여기서 얹는다 — 걷기/앉기 프레임을 만들기 **전**이라야
   // 고친 도트가 모든 자세에 그대로 따라간다.
-  rows = applyOverride(src.id, rows, palette);
+  const override = applyOverride(src.id, rows, palette);
+  rows = override.rows;
 
   // 걷기 프레임은 다리 행만 갈아끼우면 되므로 그 부분만 만들어 둔다.
   const legFrames = {
@@ -531,6 +534,7 @@ export function extractOne(src, gh = TARGET_HEIGHT) {
   return {
     src,
     rows,
+    override,
     faceWidth,
     faceCx,
     palette,
@@ -625,6 +629,8 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const outDir = path.join(root, "src", "renderer", "characters");
   for (const src of SOURCES) {
     const r = buildCharacter(src);
+    if (r.override?.note) console.warn(`  ⚠︎ ${src.id}: ${r.override.note}`);
+    else if (r.override?.applied) console.log(`  · ${src.id}: 손수정 ${r.override.applied}칸 적용`);
     fs.writeFileSync(path.join(outDir, `${src.id}.js`), emit(r));
     console.log(
       `${r.src.id.padEnd(9)} ${r.gw}x${r.gh}  face=${r.faceWidth}  block=${r.block}  ` +
