@@ -44,6 +44,42 @@ npm run dev
 node tools/make-tray-icon.mjs [캐릭터id]   # assets/trayTemplate.png (+@2x)
 ```
 
+## 배포용 앱 만들기
+
+```bash
+npm run pack        # dist/yamulttak-pet-0.1.0-arm64.dmg (+ .zip)
+```
+
+아이콘은 캐릭터 도트에서 만든다 (`npm run icon` — `pack` 이 알아서 부른다).
+지금은 Apple Silicon(arm64) 전용이다. 인텔까지 한 파일로 묶으려면
+`npm run pack:universal`.
+
+### 설치 (받는 사람)
+
+1. `.dmg` 를 열고 **SGC Pet** 을 Applications 로 끌어다 놓는다
+2. 처음 한 번만 — 확인 안 된 개발자라 그냥 열면 막힌다:
+   - **Finder 에서 우클릭 → 열기 → 열기** (더블클릭 말고)
+   - 그래도 "손상되었다" 고 하면:
+     `xattr -dr com.apple.quarantine "/Applications/SGC Pet.app"`
+3. Dock 에는 안 뜬다. **메뉴바의 고양이 머리 아이콘**이 전부다 —
+   오버레이 숨기기/보이기, 설정, 종료.
+
+정식 서명·공증(Apple Developer 연간 $99)을 안 했기 때문에 필요한 절차다.
+인증서가 생기면 `build.mac.identity` 만 채우면 된다.
+
+### 포장하면서 걸렸던 것들
+
+- **번들 이름은 ASCII 여야 한다.** `productName` 을 한글로 두면 실행파일 이름도
+  한글이 되는데, 그러면 앱이 켜지자마자 V8 에서 트랩을 걸고 죽는다(exit 133).
+  번들은 `SGC Pet`, 사용자에게 보이는 이름은 `CFBundleDisplayName` 으로 한글.
+- **다시 서명해야 한다.** 포장하면서 Info.plist 를 갈아끼우면 Electron 이 달고
+  나온 서명이 깨지고, Apple Silicon 은 그런 바이너리를 실행시키지 않는다.
+  `tools/sign-adhoc.cjs` 가 애드혹으로 다시 서명한다.
+- **JIT 권한이 필요하다.** 서명할 때 `assets/entitlements.mac.plist` 를 안 물리면
+  V8 이 실행 가능한 메모리를 못 얻어 또 트랩을 건다. `--deep` 은 중첩 번들에
+  권한을 제대로 못 물려서, 프레임워크 → 헬퍼 → 본체 순으로 직접 서명한다.
+- `LSUIElement: true` 로 Dock 아이콘을 뺀다 (`app.dock.hide()` 보다 확실하다).
+
 ## 현재 진행 상황
 
 - [x] **Phase 1** — Electron 스캐폴딩 + 투명 클릭통과 오버레이 + 임시 사각형 워킹

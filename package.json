@@ -11,10 +11,61 @@
     "sprites:png": "node tools/render-sprites.mjs",
     "bubbles": "electron tools/preview-bubbles.js",
     "export": "node tools/export-sprites.mjs",
-    "dots": "node tools/pixel-editor.mjs"
+    "dots": "node tools/pixel-editor.mjs",
+    "icon": "node tools/make-app-icon.mjs",
+    "pack": "npm run icon && electron-builder --mac --arm64",
+    "pack:universal": "npm run icon && electron-builder --mac --universal"
   },
   "devDependencies": {
     "electron": "^33.0.0",
+    "electron-builder": "^26.15.3",
     "pngjs": "^7.0.0"
+  },
+  "build": {
+    "appId": "io.bworx.yamulttak-pet",
+    "productName": "SGC Pet",
+    "copyright": "사회인 게임클럽",
+    "directories": {
+      "output": "dist",
+      "buildResources": "assets"
+    },
+    "files": [
+      "src/**/*",
+      "assets/trayTemplate*.png",
+      "package.json"
+    ],
+    "asar": true,
+    "mac": {
+      "category": "public.app-category.entertainment",
+      "icon": "assets/icon.png",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "arm64"
+          ]
+        }
+      ],
+      "extendInfo": {
+        "LSUIElement": true,
+        "CFBundleDisplayName": "야물딱펫"
+      },
+      "identity": null
+    },
+    "dmg": {
+      "title": "야물딱펫",
+      "artifactName": "${name}-${version}-${arch}.${ext}"
+    },
+    "artifactName": "${name}-${version}-${arch}.${ext}",
+    "afterPack": "tools/sign-adhoc.cjs"
+  },
+  "overrides": {
+    "@noble/hashes": "^1.8.0"
   }
 }

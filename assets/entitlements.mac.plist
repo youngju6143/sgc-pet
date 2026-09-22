@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Electron(V8)은 JIT 으로 기계어를 찍어 실행한다. 서명할 때 이 권한을 안 주면
+  실행 가능한 메모리 할당이 막혀서 V8 이 켜지자마자 트랩을 걸고 죽는다
+  (EXC_BREAKPOINT). 애드혹 서명이라도 반드시 같이 넣어야 한다.
+-->
+<plist version="1.0">
+  <dict>
+    <key>com.apple.security.cs.allow-jit</key>
+    <true/>
+    <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+    <true/>
+    <key>com.apple.security.cs.allow-dyld-environment-variables</key>
+    <true/>
+    <key>com.apple.security.cs.disable-library-validation</key>
+    <true/>
+  </dict>
+</plist>
