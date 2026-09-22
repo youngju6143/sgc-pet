@@ -1,0 +1,50 @@
+강초당 (chodang) 57x83
+  a #221d24
+  b #f6c7b3
+  c #7b7b7b
+  d #ededed
+  e #3a3a3a
+  f #d8d8d8
+  g #c1c1c1
+
+구라베 (rave) 64x75
+  a #331408
+  b #db9567
+  c #e0d4c8
+  d #8f6047
+  e #a67052
+  f #81472f
+  g #b1998a
+  h #a58775
+  i #dfab79
+  j #d3b9ab
+  k #eebb8f
+
+망난이 (mangnani) 57x84
+  a #102336
+  b #f2b096
+  c #454b57
+  d #b5dffa
+  e #e2f2fd
+  f #f8dd94
+  g #8fc6ee
+
+송몽숙 (mongsuk) 65x77
+  a #2e042e
+  b #e7abc9
+  c #8a5f93
+  d #f3e7fc
+  e #b890d2
+  f #6a376f
+  g #e8cdfa
+
+장폰주 (ponzoo) 72x81
+  a #38200a
+  b #f8d6b9
+  c #b48e54
+  d #fdf7e3
+  e #e8d09d
+  f #624424
+  g #eaad5a
+  h #f5e1af
+  i #dcdcdc

@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; img-src 'self' data:;"
+    />
+    <title>야물딱 펫 설정</title>
+    <style>
+      :root {
+        --bg: #1b1d23;
+        --panel: #23262e;
+        --panel-hover: #2a2e37;
+        --line: #343943;
+        --fg: #eceef3;
+        --dim: #9aa1ad;
+        --accent: #7c8cf8;
+      }
+      * { box-sizing: border-box; }
+      html, body {
+        margin: 0;
+        height: 100%;
+        background: var(--bg);
+        color: var(--fg);
+        font: 13px/1.5 ui-sans-serif, -apple-system, "Apple SD Gothic Neo", sans-serif;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+      /* 타이틀바가 없는 창이라 위쪽 빈 띠를 드래그 영역으로 쓴다 */
+      #drag {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 38px;
+        -webkit-app-region: drag;
+        z-index: 2;
+      }
+      main {
+        height: 100%;
+        overflow-y: auto;
+        padding: 46px 26px 30px;
+      }
+
+      section + section {
+        margin-top: 26px;
+        padding-top: 26px;
+        border-top: 1px solid var(--line);
+      }
+      h2 {
+        margin: 0;
+        font-size: 14px;
+        font-weight: 700;
+      }
+      .desc {
+        margin: 4px 0 14px;
+        color: var(--dim);
+        font-size: 12px;
+      }
+
+      /* --- 캐릭터 타일 --- */
+      .tiles {
+        display: grid;
+        /* 5종이 한 줄에 들어가되, 창을 줄이면 알아서 접힌다 */
+        grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+        gap: 10px;
+      }
+      .tile {
+        position: relative;
+        padding: 10px 6px 8px;
+        border: 1.5px solid var(--line);
+        border-radius: 12px;
+        background: var(--panel);
+        text-align: center;
+        cursor: pointer;
+        transition: border-color 90ms linear, background 90ms linear;
+      }
+      .tile:hover { background: var(--panel-hover); }
+      .tile[aria-pressed="true"] {
+        border-color: var(--accent);
+        background: #2b2f46;
+      }
+      .tile canvas {
+        display: block;
+        margin: 0 auto 6px;
+        image-rendering: pixelated;
+      }
+      .tile .name {
+        font-size: 12px;
+        font-weight: 600;
+        color: #fff;
+      }
+      .tile .check {
+        position: absolute;
+        top: 6px;
+        right: 6px;
+        width: 17px;
+        height: 17px;
+        border-radius: 50%;
+        background: var(--accent);
+        color: #fff;
+        font-size: 11px;
+        line-height: 17px;
+        opacity: 0;
+      }
+      .tile[aria-pressed="true"] .check { opacity: 1; }
+
+      /* --- 라디오 줄 --- */
+      .choices {
+        display: flex;
+        gap: 8px;
+      }
+      .choice {
+        flex: 1;
+        padding: 9px 4px;
+        border: 1.5px solid var(--line);
+        border-radius: 10px;
+        background: var(--panel);
+        color: var(--fg);
+        font: inherit;
+        cursor: pointer;
+      }
+      .choice:hover { background: var(--panel-hover); }
+      .choice[aria-pressed="true"] {
+        border-color: var(--accent);
+        background: #2b2f46;
+      }
+      .choice small {
+        display: block;
+        color: var(--dim);
+        font-size: 11px;
+      }
+
+      /* --- 토글 --- */
+      .row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 9px 0;
+      }
+      .row + .row { border-top: 1px solid var(--line); }
+      .row .label { font-size: 13px; }
+      .row .sub {
+        color: var(--dim);
+        font-size: 11.5px;
+      }
+      .switch {
+        flex: none;
+        width: 40px;
+        height: 23px;
+        padding: 0;
+        border: none;
+        border-radius: 999px;
+        background: #3c414c;
+        cursor: pointer;
+        transition: background 110ms linear;
+      }
+      .switch::after {
+        content: "";
+        display: block;
+        width: 19px;
+        height: 19px;
+        margin: 2px;
+        border-radius: 50%;
+        background: #fff;
+        transition: transform 110ms ease-out;
+      }
+      .switch[aria-pressed="true"] { background: var(--accent); }
+      .switch[aria-pressed="true"]::after { transform: translateX(17px); }
+
+      .hint {
+        margin-top: 10px;
+        color: var(--dim);
+        font-size: 11.5px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="drag"></div>
+    <main>
+      <section>
+        <h2>캐릭터</h2>
+        <p class="desc">화면에 띄울 친구를 고르세요 · 최소 한 마리</p>
+        <div class="tiles" id="characters"></div>
+      </section>
+
+      <section>
+        <h2>크기</h2>
+        <p class="desc">도트를 몇 배로 키울지</p>
+        <div class="choices" id="scale"></div>
+      </section>
+
+      <section>
+        <h2>속도</h2>
+        <p class="desc">돌아다니는 빠르기</p>
+        <div class="choices" id="speed"></div>
+      </section>
+
+      <section>
+        <h2>돌아다닐 범위</h2>
+        <p class="desc">좁히면 펫들이 옹기종기 모여 있습니다.</p>
+        <div class="choices" id="width"></div>
+        <div class="choices" id="align" style="margin-top: 8px"></div>
+      </section>
+
+      <section>
+        <h2>그 외</h2>
+        <div class="row">
+          <div>
+            <div class="label">이름표 보이기</div>
+            <div class="sub">머리 위에 이름과 상태 점을 띄웁니다</div>
+          </div>
+          <button class="switch" id="nametags" aria-pressed="false"></button>
+        </div>
+        <div class="row">
+          <div>
+            <div class="label">펫 클릭 막기</div>
+            <div class="sub">클릭이 전부 아래 창으로 지나갑니다 (집기·말 걸기 불가)</div>
+          </div>
+          <button class="switch" id="noclick" aria-pressed="false"></button>
+        </div>
+        <div class="row">
+          <div>
+            <div class="label">혼잣말 하기</div>
+            <div class="sub">가끔 말풍선을 띄웁니다</div>
+          </div>
+          <button class="switch" id="chatter" aria-pressed="false"></button>
+        </div>
+        <div class="row">
+          <div>
+            <div class="label">로그인 시 자동 실행</div>
+            <div class="sub">맥을 켜면 알아서 올라옵니다</div>
+          </div>
+          <button class="switch" id="launch" aria-pressed="false"></button>
+        </div>
+        <p class="hint">바꾸면 바로 저장되고 화면에 적용됩니다.</p>
+      </section>
+    </main>
+    <script type="module" src="./settings.js"></script>
+  </body>
+</html>

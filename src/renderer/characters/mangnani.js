@@ -1,0 +1,153 @@
+'use strict';
+
+/**
+ * 망난이 — 망난이.png 에서 자동 추출.
+ * 직접 고치지 말 것: `node tools/extract-characters.mjs` 로 다시 생성된다.
+ */
+
+export default {
+  id: 'mangnani',
+  name: '망난이',
+
+  width: 57,
+  height: 84,
+
+  // 원본에서 뽑은 팔레트 (a = 외곽선/눈)
+  palette: {
+    a: '#102336',
+    b: '#f2b096',
+    c: '#454b57',
+    d: '#b5dffa',
+    e: '#e2f2fd',
+    f: '#f8dd94',
+    g: '#8fc6ee',
+  },
+
+  /** 서 있는 기본 프레임 (다리 포함) */
+  torso: [
+    '..................................aaaa...................',
+    '................................aaaaaaaa.................',
+    '................................aaddddaa.................',
+    '..............................aaddddddaa.................',
+    '.............................aaaddddddaa.................',
+    '.............................aadddddddaa.................',
+    '...........................aadddddddaa...................',
+    '..........................aaadddddddaa...................',
+    '..........................aadddddddaa....................',
+    '......................aaaaaaddddddaaaa...................',
+    '.....................aaaaaaaddddddaaaa...................',
+    '.................aaaaaddddacddddddddddaaa................',
+    '...............aaaddddddddggddddddddddaaaaa..............',
+    '...............aaaddddddddggddddddddddaadaa..............',
+    '............aaadddddddddddddddddddddddaaddaaaa...........',
+    '..........aaddddddddddddddddddddddddaadddddaaaa..........',
+    '..........aaddddddddddddddddddddggddaadddddddaa..........',
+    '.........aadddddddddddddddddddddgcaaaddddddddddaa........',
+    '.......aaddddddddddddddddddddddddddddddddddddddaaa.......',
+    '.......aadddddddddddddddddddddddddddddddddddddddaa.......',
+    '......aaddddddddddddddddddddddddddddddddddddddddddaa.....',
+    '......aaddddddddddddddddddddddddddddddddddddddddddaa.....',
+    '......aadddddaaaaadddddddddddddddddddddaaaaaddddddaa.....',
+    '....aaddddddaeeeeeaaaadddddddddddddaaaaeeeeeaddddddaa....',
+    '...aaaddddddaeeeeeeeeeaadddddddddaaeeeeeeeeeaddddddaa....',
+    '...aadddddddaeeeeeeeeeeeadddddddaeeeeeeeeeeeadddddddaa...',
+    '...aadddddddaeeeeeeeeeeeadddddddaeeeeeeeeeeeadddddddaa...',
+    '...aadddddddaeeeeeeeeeeeadddddddaeeeeeeeeeeeadddddddaa...',
+    '.aaadddddddddaaeeeeeeeeeadddddddaeeeeeeeeeaaddddddddaa...',
+    '.aaddddddddddddaaaeeeeeeadddddddaeeeeeeaaaddddddddddddaa.',
+    '.aadddddddddddddddaaaaaadddddddddaaaaaadddddddddddddddaa.',
+    '.aadddddddddddddddddddddddddddddddddddddddddddddddddddaa.',
+    'aaddddddddddddddddddddddddddddddddddddddddddddddddddddaa.',
+    'aaddddddddddddddddddddddddddddddddddddddddddddddddddddaa.',
+    'aadddddddddddddddddddddddddddddddddddddddddddddddddddddaa',
+    'aadddddddddddddddaaaadddddddddddddddaaaadddddddddddddddaa',
+    'aaddddddddddddddaaaaaadddddddddddddaaaaaaddddddddddddddaa',
+    'aaddddddddddeeedaaaaaadddddddddddddaaaaaaeeeedddddddddgaa',
+    'aaddddddddddddddaaaaaadddaaaaaacdddaaaaaaddddeddddddddgaa',
+    'aaddddddddedbbbbdaaaadddaffffffaddddaaaadbbbbdddddddddgaa',
+    'aadddddddddbbbbbbddddddaffffffffadddddddbbbbbbddddddddgaa',
+    'aagdddddddbbbbbbbbdddddaffffffffaddddddbbbbbbbbdddddddgaa',
+    '.aaddddddddbbbbbbdddddddaaaaaaaaddddddddbbbbbbddddddddaa.',
+    '.aadddddddddbbbbdddddddddaffffaddddddddddbbbbdddddddddaa.',
+    '.aaggddddddddddddddddddddaffffadddddddddddddddddddddggaa.',
+    '.aaagdddddddddddddddddddddaaaaddddddddddddddddddddddgaaa.',
+    '...aagdddddddddddddddddddddddddddddddddddddddddddddgaa...',
+    '....aagdddddddddddddddddddddddddddddddddddddddddddgaa....',
+    '....aaadddddddddddddddddddddddddddddddddddddddddddaaa....',
+    '......aagdddddddddddddddddddddddddddddddddddddddgga......',
+    '.......aagggdddddddddddddddddddddddddddddddddgggaa.......',
+    '.......aaaagdddddddddddddddddddddddddddddddddgaaaa.......',
+    '.........aaaggggdddddddddddddddddddddddddggggaaa.........',
+    '............aaacggggggdddddddddddddggggggaaaa............',
+    '.........aaaaaaaccccccccccgcggggcccccccccaaaaaaa.........',
+    '.........aaadddaaaaaaaaaaaaaaaaaaaaaaaaaaddddaaa.........',
+    '......aaaaddddddddggggggggggggggggggggdddddddddaaaa......',
+    '..aaaaddddddddddddddddddddddddddddddddddddddddddddaaaaa..',
+    '..aaaadddddddddddddddddeeeeeeeeeeddddddddddddddddddaaaa..',
+    '.aaddddddddddddddddddeeeeeeeeeeeeeedddddddddddddddddddaa.',
+    '.aaddddddddddddddddddeeeeeeeeeeeeeeeddddddddddddddddddaa.',
+    '.aadddddddddddddddddeeeeeeeeeeeeeeeeedddddddddddddddddaa.',
+    '.aacgdddddddggdddddeeeeeeeeeeeeeeeeeeddddddggdddddddgaa..',
+    '..aagdddddddggddddeeeeeeeeeeeeeeeeeeeddddddggdddddddgaa..',
+    '...aaagdddggadddddeeeeeeeeeeeeeeeeeeeedddddgagddddgaa....',
+    '.....aadddaaadddddeeeeeeeeeeeeeeeeeeeedddddaaaadddaa.....',
+    '.....aaaddaaadddddeeeeeeeeeeeeeeeeeeeedddddaaaaddaaa.....',
+    '.......aaaaaadddddeeeeeeeeeeeeeeeeeeeedddddaa.aaaa.......',
+    '.......aaa.aadddddeeeeeeeeeeeeeeeeeeeedddddaa.aaaa.......',
+    '...........aagddddddeeeeeeeeeeeeeeeeedddddgaa............',
+    '...........aaggdddddeeeeeeeeeeeeeeeeedddddgaa............',
+    '...........aaggdddddeeeeeeeeeeeeeeeeddddddgaa............',
+    '.............aagdddddeeeeeeeeeeeeeeddddddgaa.............',
+    '.............aagddddddeeeeeeeeeeeeeddddddgaa.............',
+    '..............aagddddddeeeeeeeeeeddddddgga...............',
+    '................aaaaaadddddddddddddaaaaaa................',
+    '................aaaaaadddddddddddddaaaaaa................',
+    '..............aaafffffaaaaaaaaaaaaaffffaaa...............',
+    '.............aaffffffffaa......aafffffffffaa.............',
+    '.............aaffffffffaa......aafffffffffaa.............',
+    '.............aaffffffffaa......aafffffffffaa.............',
+    '..............aaffffffaa.........aafffffaa...............',
+    '..............aaaaaaaaaa.........aaaaaaaaa...............',
+    '................aaaaaa.............aaaaaa................',
+  ],
+
+  /** 실루엣이 갈라지는 지점부터가 다리. 걷기는 이 아래 행만 갈아끼운다. */
+  legTop: 78,
+  legFrames: {
+    stand: [
+      '.............aaffffffffaa......aafffffffffaa.............',
+      '.............aaffffffffaa......aafffffffffaa.............',
+      '.............aaffffffffaa......aafffffffffaa.............',
+      '..............aaffffffaa.........aafffffaa...............',
+      '..............aaaaaaaaaa.........aaaaaaaaa...............',
+      '................aaaaaa.............aaaaaa................',
+    ],
+    stepLeft: [
+      '..............aaffffffffaa.....aafffffffffaa.............',
+      '..............aaffffffffaa.....aafffffffffaa.............',
+      '...............aaffffffaa......aafffffffffaa.............',
+      '...............aaaaaaaaaa........aafffffaa...............',
+      '.................aaaaaa..........aaaaaaaaa...............',
+      '...................................aaaaaa................',
+    ],
+    stepRight: [
+      '.............aaffffffffaa.....aafffffffffaa..............',
+      '.............aaffffffffaa.....aafffffffffaa..............',
+      '.............aaffffffffaa.......aafffffaa................',
+      '..............aaffffffaa........aaaaaaaaa................',
+      '..............aaaaaaaaaa..........aaaaaa.................',
+      '................aaaaaa...................................',
+    ],
+  },
+
+  /** 눈 감기(깜빡임/잠)용 좌표 */
+  eyes: { left: { x: 16, y: 35, w: 6, h: 5 }, right: { x: 35, y: 35, w: 6, h: 5 }, fill: 'd', line: 'a' },
+
+  /** 눈높이에서 잰 얼굴 가로 중심(도트). 좌우 반전 보정에 쓴다 */
+  faceCx: 28,
+
+  /** 원본 도트가 바라보는 방향 (1=오른쪽). 꼬리처럼 방향이 있는 부위 때문에 필요하다 */
+  artFacing: 1,
+
+  lines: ["왜!","뭐!","아 진짜","하지 마"],
+};

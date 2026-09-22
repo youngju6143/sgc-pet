@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <title>도트 에디터 — yamulttak-pet</title>
+    <style>
+      :root {
+        --bg: #1b1b21;
+        --panel: #24242c;
+        --line: #35353f;
+        --text: #e8e8ee;
+        --muted: #9a9aa8;
+        --accent: #7c8cf8;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        padding: 20px;
+        background: var(--bg);
+        color: var(--text);
+        font: 13px/1.5 ui-sans-serif, -apple-system, "Apple SD Gothic Neo", sans-serif;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+      h1 { font-size: 15px; margin: 0 0 2px; }
+      .hint { color: var(--muted); margin: 0 0 16px; }
+      .bar {
+        display: flex; flex-wrap: wrap; gap: 14px; align-items: center;
+        background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+        padding: 10px 14px; margin-bottom: 16px;
+      }
+      .bar label { display: flex; align-items: center; gap: 6px; color: var(--muted); }
+      button {
+        background: #2f2f3a; color: var(--text); border: 1px solid var(--line);
+        border-radius: 7px; padding: 5px 11px; font: inherit; cursor: pointer;
+      }
+      button:hover { background: #383845; }
+      button.on { border-color: var(--accent); background: #333a5c; }
+      button.danger:hover { background: #4a2a2f; }
+      .tabs { display: flex; gap: 6px; }
+      .stage { display: flex; gap: 20px; align-items: flex-start; }
+      .pane {
+        background: var(--panel); border: 1px solid var(--line);
+        border-radius: 10px; padding: 12px;
+      }
+      canvas { display: block; image-rendering: pixelated; cursor: crosshair; }
+      #preview { cursor: default; background: #15151a; border-radius: 6px; }
+      .swatches { display: grid; grid-template-columns: repeat(2, auto); gap: 5px; }
+      .sw {
+        display: flex; align-items: center; gap: 7px;
+        padding: 4px 7px; border: 1.5px solid var(--line); border-radius: 7px; cursor: pointer;
+      }
+      .sw.on { border-color: var(--accent); background: #2b2f46; }
+      .sw i { width: 17px; height: 17px; border-radius: 4px; border: 1px solid #0006; }
+      .sw code { color: var(--muted); font-size: 11px; }
+      .meta { color: var(--muted); margin-top: 10px; font-size: 12px; }
+      .keys { color: var(--muted); font-size: 12px; margin-top: 14px; line-height: 1.7; }
+      .keys b { color: var(--text); font-weight: 600; }
+      #status { color: var(--muted); }
+      #status.ok { color: #7ee2a8; }
+      #status.warn { color: #f5b971; }
+    </style>
+  </head>
+  <body>
+    <h1>도트 에디터</h1>
+    <p class="hint">
+      찍은 건 <code>tools/overrides/&lt;id&gt;.json</code> 에 <b>바뀐 칸만</b> 저장된다 —
+      원본 PNG 를 다시 뽑아도 안 날아간다. 저장 뒤
+      <code>node tools/extract-characters.mjs</code> 를 돌리면 앱에 반영된다.
+    </p>
+
+    <div class="bar">
+      <div class="tabs" id="tabs"></div>
+      <label>확대 <input type="range" id="zoom" min="4" max="20" value="10" /></label>
+      <label><input type="checkbox" id="grid" checked /> 격자</label>
+      <label><input type="checkbox" id="mirror" /> 좌우 대칭</label>
+      <button id="undo">되돌리기 ⌘Z</button>
+      <button id="save">저장</button>
+      <button id="reset" class="danger">수정 전부 버리기</button>
+      <span id="status"></span>
+    </div>
+
+    <div class="stage">
+      <div class="pane"><canvas id="board"></canvas></div>
+      <div class="pane">
+        <div class="swatches" id="palette"></div>
+        <div class="meta" id="meta"></div>
+        <canvas id="preview"></canvas>
+        <div class="keys">
+          <b>왼클릭</b> 칠하기 · 드래그도 됨<br />
+          <b>Alt+클릭</b> 스포이드 (그 칸 색 집기)<br />
+          <b>우클릭</b> 지우기(투명)<br />
+          <b>⌘Z</b> 되돌리기 · <b>⌘S</b> 저장
+        </div>
+      </div>
+    </div>
+
+    <script type="module">
+      const $ = (id) => document.getElementById(id);
+      const board = $('board');
+      const bctx = board.getContext('2d');
+      const preview = $('preview');
+      const pctx = preview.getContext('2d');
+
+      let characters = [];
+      let cur = null;      // 현재 캐릭터
+      let grid = [];       // 편집 중인 격자 (팔레트 글자 배열)
+      let color = null;    // 선택한 색 hex ('.' 이면 지우개)
+      let undoStack = [];
+      let painting = null; // 드래그 중 버튼
+
+      const TRANSPARENT = null;
+
+      /** 팔레트 글자 → hex (없으면 null = 투명) */
+      const hexOf = (key) => (key === '.' ? TRANSPARENT : cur.palette[key] ?? TRANSPARENT);
+
+      async function boot() {
+        characters = await (await fetch('/api/characters')).json();
+        $('tabs').replaceChildren(
+          ...characters.map((c) => {
+            const b = document.createElement('button');
+            b.textContent = c.name;
+            b.dataset.id = c.id;
+            b.addEventListener('click', () => select(c.id));
+            return b;
+          }),
+        );
+        select(characters[0].id);
+      }
+
+      function select(id) {
+        cur = characters.find((c) => c.id === id);
+        // base + 저장된 수정본 = 지금 화면
+        grid = cur.base.map((r) => r.split(''));
+        for (const [x, y, hex] of cur.cells) {
+          grid[y][x] = hex === null ? '.' : keyForHex(hex);
+        }
+        undoStack = [];
+        color = Object.values(cur.palette)[1] ?? Object.values(cur.palette)[0];
+        for (const b of $('tabs').children) b.classList.toggle('on', b.dataset.id === id);
+        buildPalette();
+        resize();
+        status('');
+      }
+
+      /** hex 에 해당하는 팔레트 글자. 없으면 임시 글자를 만들어 팔레트에 넣는다 */
+      function keyForHex(hex) {
+        const found = Object.keys(cur.palette).find((k) => cur.palette[k] === hex);
+        if (found) return found;
+        const key = String.fromCharCode(97 + Object.keys(cur.palette).length);
+        cur.palette[key] = hex;
+        return key;
+      }
+
+      function buildPalette() {
+        const entries = Object.entries(cur.palette);
+        const items = [
+          ...entries.map(([key, hex]) => ({ key, hex })),
+          { key: '.', hex: null },
+        ];
+        $('palette').replaceChildren(
+          ...items.map(({ key, hex }) => {
+            const el = document.createElement('div');
+            el.className = 'sw';
+            el.dataset.hex = hex ?? '';
+            el.innerHTML =
+              `<i style="background:${hex ?? 'transparent'};${hex ? '' : 'background-image:linear-gradient(45deg,#555 25%,transparent 25%,transparent 75%,#555 75%),linear-gradient(45deg,#555 25%,transparent 25%,transparent 75%,#555 75%);background-size:8px 8px;background-position:0 0,4px 4px;'}"></i>` +
+              `<code>${hex ?? '투명'}</code>`;
+            el.addEventListener('click', () => {
+              color = hex;
+              markPalette();
+            });
+            return el;
+          }),
+        );
+        markPalette();
+      }
+
+      function markPalette() {
+        for (const el of $('palette').children) {
+          el.classList.toggle('on', (el.dataset.hex || null) === (color ?? null));
+        }
+      }
+
+      function resize() {
+        const z = Number($('zoom').value);
+        board.width = cur.width * z;
+        board.height = cur.height * z;
+        preview.width = cur.width * 3;
+        preview.height = cur.height * 3;
+        draw();
+      }
+
+      function draw() {
+        const z = Number($('zoom').value);
+        bctx.clearRect(0, 0, board.width, board.height);
+        // 체커보드(투명 표시)
+        bctx.fillStyle = '#15151a';
+        bctx.fillRect(0, 0, board.width, board.height);
+        for (let y = 0; y < cur.height; y++) {
+          for (let x = 0; x < cur.width; x++) {
+            const hex = hexOf(grid[y][x]);
+            if (!hex) continue;
+            bctx.fillStyle = hex;
+            bctx.fillRect(x * z, y * z, z, z);
+          }
+        }
+        if ($('grid').checked && z >= 7) {
+          bctx.strokeStyle = 'rgba(255,255,255,0.07)';
+          bctx.lineWidth = 1;
+          bctx.beginPath();
+          for (let x = 0; x <= cur.width; x++) { bctx.moveTo(x * z + 0.5, 0); bctx.lineTo(x * z + 0.5, board.height); }
+          for (let y = 0; y <= cur.height; y++) { bctx.moveTo(0, y * z + 0.5); bctx.lineTo(board.width, y * z + 0.5); }
+          bctx.stroke();
+        }
+        // 다리 시작선 — 이 아래는 걷기 프레임이 갈아끼우는 구간
+        bctx.strokeStyle = 'rgba(124,140,248,0.5)';
+        bctx.beginPath();
+        bctx.moveTo(0, cur.legTop * z + 0.5);
+        bctx.lineTo(board.width, cur.legTop * z + 0.5);
+        bctx.stroke();
+
+        pctx.clearRect(0, 0, preview.width, preview.height);
+        for (let y = 0; y < cur.height; y++) {
+          for (let x = 0; x < cur.width; x++) {
+            const hex = hexOf(grid[y][x]);
+            if (!hex) continue;
+            pctx.fillStyle = hex;
+            pctx.fillRect(x * 3, y * 3, 3, 3);
+          }
+        }
+        $('meta').textContent =
+          `${cur.width}×${cur.height} · 바뀐 칸 ${diff().length}개 · 파란 선 아래 = 다리(걷기 프레임)`;
+      }
+
+      /** 지금 격자 vs 원본 = 저장할 차이 */
+      function diff() {
+        const cells = [];
+        for (let y = 0; y < cur.height; y++) {
+          for (let x = 0; x < cur.width; x++) {
+            if (grid[y][x] === cur.base[y][x]) continue;
+            cells.push([x, y, hexOf(grid[y][x])]);
+          }
+        }
+        return cells;
+      }
+
+      function cellAt(event) {
+        const z = Number($('zoom').value);
+        const rect = board.getBoundingClientRect();
+        const x = Math.floor((event.clientX - rect.left) / z);
+        const y = Math.floor((event.clientY - rect.top) / z);
+        return x >= 0 && y >= 0 && x < cur.width && y < cur.height ? { x, y } : null;
+      }
+
+      function paint(event) {
+        const at = cellAt(event);
+        if (!at) return;
+        const erase = painting === 2;
+        const hex = erase ? TRANSPARENT : color;
+        const key = hex === null ? '.' : keyForHex(hex);
+        const targets = [at];
+        if ($('mirror').checked) targets.push({ x: cur.width - 1 - at.x, y: at.y });
+        let changed = false;
+        for (const t of targets) {
+          if (grid[t.y][t.x] === key) continue;
+          grid[t.y][t.x] = key;
+          changed = true;
+        }
+        if (changed) draw();
+      }
+
+      board.addEventListener('contextmenu', (e) => e.preventDefault());
+      board.addEventListener('mousedown', (event) => {
+        event.preventDefault();
+        if (event.altKey) {
+          const at = cellAt(event);
+          if (at) { color = hexOf(grid[at.y][at.x]); markPalette(); }
+          return;
+        }
+        undoStack.push(grid.map((r) => [...r]));
+        if (undoStack.length > 60) undoStack.shift();
+        painting = event.button === 2 ? 2 : 0;
+        paint(event);
+      });
+      window.addEventListener('mousemove', (event) => { if (painting !== null) paint(event); });
+      window.addEventListener('mouseup', () => { painting = null; });
+
+      $('zoom').addEventListener('input', resize);
+      $('grid').addEventListener('change', draw);
+      $('undo').addEventListener('click', undo);
+      $('save').addEventListener('click', save);
+      $('reset').addEventListener('click', () => {
+        if (!confirm(`${cur.name} 의 손수정을 전부 버릴까?`)) return;
+        undoStack.push(grid.map((r) => [...r]));
+        grid = cur.base.map((r) => r.split(''));
+        draw();
+        save();
+      });
+
+      function undo() {
+        const prev = undoStack.pop();
+        if (!prev) return status('되돌릴 게 없다', 'warn');
+        grid = prev;
+        draw();
+      }
+
+      async function save() {
+        const cells = diff();
+        const res = await fetch('/api/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: cur.id, width: cur.width, height: cur.height, cells }),
+        });
+        if (!res.ok) return status('저장 실패', 'warn');
+        cur.cells = cells;
+        status(`저장됨 — ${cells.length}칸 · 이제 node tools/extract-characters.mjs`, 'ok');
+      }
+
+      function status(text, kind = '') {
+        $('status').textContent = text;
+        $('status').className = kind;
+      }
+
+      window.addEventListener('keydown', (event) => {
+        if (!(event.metaKey || event.ctrlKey)) return;
+        if (event.key === 'z') { event.preventDefault(); undo(); }
+        if (event.key === 's') { event.preventDefault(); save(); }
+      });
+
+      boot();
+    </script>
+  </body>
+</html>

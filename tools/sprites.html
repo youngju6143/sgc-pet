@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <title>스프라이트 디버그 — yamulttak-pet</title>
+    <style>
+      :root {
+        --bg: #1b1b21;
+        --panel: #24242c;
+        --line: #35353f;
+        --text: #e8e8ee;
+        --muted: #9a9aa8;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        padding: 24px;
+        background: var(--bg);
+        color: var(--text);
+        font: 13px/1.5 ui-sans-serif, -apple-system, "Apple SD Gothic Neo", sans-serif;
+      }
+      h1 { font-size: 16px; margin: 0 0 4px; }
+      .hint { color: var(--muted); margin: 0 0 20px; }
+      .controls {
+        position: sticky; top: 0; z-index: 10;
+        display: flex; flex-wrap: wrap; gap: 16px; align-items: center;
+        background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+        padding: 12px 16px; margin-bottom: 24px;
+      }
+      .controls label { display: flex; align-items: center; gap: 6px; color: var(--muted); }
+      .controls input[type="range"] { width: 120px; }
+      .char { margin-bottom: 32px; }
+      .char > h2 { font-size: 14px; margin: 0 0 4px; }
+      .swatches { display: flex; gap: 4px; margin-bottom: 12px; }
+      .swatch { width: 22px; height: 22px; border-radius: 4px; border: 1px solid var(--line); position: relative; }
+      .swatch span { position: absolute; bottom: -16px; left: 0; font-size: 9px; color: var(--muted); }
+      .row { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; }
+      .row > .state { width: 64px; padding-top: 8px; color: var(--muted); }
+      .cells { display: flex; flex-wrap: wrap; gap: 8px; }
+      .cell { border: 1px solid var(--line); border-radius: 8px; padding: 6px; text-align: center; background: #15151a; }
+      .cell.light { background: #e9e9ef; }
+      .cell canvas { display: block; image-rendering: pixelated; }
+      .cell b { display: block; font-weight: 400; font-size: 10px; color: var(--muted); margin-top: 4px; }
+    </style>
+  </head>
+  <body>
+    <h1>스프라이트 디버그</h1>
+    <p class="hint">캐릭터 × 상태 × 프레임 전체. 도트를 다듬은 뒤 새로고침하면 바로 반영된다.</p>
+
+    <div class="controls">
+      <label>배율 <input id="scale" type="range" min="2" max="10" value="6" /><b id="scalev">6x</b></label>
+      <label><input id="flip" type="checkbox" /> 왼쪽 보기</label>
+      <label><input id="blink" type="checkbox" /> 눈 감기</label>
+      <label><input id="light" type="checkbox" /> 밝은 배경</label>
+      <label><input id="grid" type="checkbox" /> 픽셀 격자</label>
+    </div>
+
+    <div id="out"></div>
+
+    <script type="module">
+      import { CHARACTERS } from '../src/renderer/characters/index.js';
+      import { ANIMATIONS, STATES, frameFor, clearFrameCache } from '../src/renderer/frames.js';
+      import { drawFrame, clearSpriteCache } from '../src/renderer/sprite.js';
+
+      const out = document.getElementById('out');
+      const inputs = {
+        scale: document.getElementById('scale'),
+        flip: document.getElementById('flip'),
+        blink: document.getElementById('blink'),
+        light: document.getElementById('light'),
+        grid: document.getElementById('grid'),
+      };
+
+      function drawGrid(ctx, scale, w, h, light) {
+        ctx.strokeStyle = light ? 'rgba(0,0,0,.14)' : 'rgba(255,255,255,.12)';
+        ctx.lineWidth = 1;
+        for (let x = 0; x <= w; x++) {
+          ctx.beginPath();
+          ctx.moveTo(x * scale + 0.5, 0);
+          ctx.lineTo(x * scale + 0.5, h * scale);
+          ctx.stroke();
+        }
+        for (let y = 0; y <= h; y++) {
+          ctx.beginPath();
+          ctx.moveTo(0, y * scale + 0.5);
+          ctx.lineTo(w * scale, y * scale + 0.5);
+          ctx.stroke();
+        }
+      }
+
+      function render() {
+        const scale = Number(inputs.scale.value);
+        const flip = inputs.flip.checked;
+        document.getElementById('scalev').textContent = scale + 'x';
+        clearSpriteCache();
+        clearFrameCache();
+        out.innerHTML = '';
+
+        for (const ch of CHARACTERS) {
+          const box = document.createElement('div');
+          box.className = 'char';
+          const swatches = Object.entries(ch.palette)
+            .map(([k, v]) => `<div class="swatch" style="background:${v}"><span>${k}</span></div>`)
+            .join('');
+          box.innerHTML = `<h2>${ch.name} <span style="color:var(--muted)">(${ch.id} · ${ch.width}×${ch.height})</span></h2>
+            <div class="swatches">${swatches}</div>`;
+
+          for (const state of STATES) {
+            const anim = ANIMATIONS[state];
+            const row = document.createElement('div');
+            row.className = 'row';
+            const cells = document.createElement('div');
+            cells.className = 'cells';
+
+            for (let i = 0; i < anim.frames.length; i++) {
+              const frame = frameFor(ch, state, i, inputs.blink.checked);
+              const cell = document.createElement('div');
+              cell.className = 'cell' + (inputs.light.checked ? ' light' : '');
+              const canvas = document.createElement('canvas');
+              canvas.width = ch.width * scale;
+              canvas.height = ch.height * scale;
+              const c = canvas.getContext('2d');
+              c.imageSmoothingEnabled = false;
+              if (inputs.grid.checked) drawGrid(c, scale, ch.width, ch.height, inputs.light.checked);
+
+              drawFrame(c, frame.rows, ch.palette, {
+                cacheKey: frame.key,
+                x: 0, y: frame.dy * scale, scale, flip,
+              });
+
+              cell.appendChild(canvas);
+              const label = document.createElement('b');
+              label.textContent = `#${i}${frame.dy ? ` dy${frame.dy}` : ''}`;
+              cell.appendChild(label);
+              cells.appendChild(cell);
+            }
+
+            const meta = anim.fps ? `${anim.fps}fps` : `보폭 ${anim.stepDistance}px`;
+            row.innerHTML = `<div class="state">${state}<br><span style="font-size:10px">${meta}</span></div>`;
+            row.appendChild(cells);
+            box.appendChild(row);
+          }
+          out.appendChild(box);
+        }
+      }
+
+      for (const el of Object.values(inputs)) el.addEventListener('input', render);
+      render();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,20 @@
+{
+  "name": "yamulttak-pet",
+  "version": "0.1.0",
+  "description": "사회인 게임클럽 데스크탑 펫 (macOS / Electron)",
+  "main": "src/main/main.js",
+  "type": "commonjs",
+  "scripts": {
+    "dev": "electron .",
+    "start": "electron .",
+    "sprites": "node tools/serve-sprites.mjs",
+    "sprites:png": "node tools/render-sprites.mjs",
+    "bubbles": "electron tools/preview-bubbles.js",
+    "export": "node tools/export-sprites.mjs",
+    "dots": "node tools/pixel-editor.mjs"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "pngjs": "^7.0.0"
+  }
+}

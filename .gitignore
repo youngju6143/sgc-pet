@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.DS_Store
+tools/sprite-sheet.png
+tools/bubbles.png
+
+# 원본 도트 원화 — 용량이 커서 저장소에는 안 올린다 (art/ 에 결과물이 있다)
+art-source/
