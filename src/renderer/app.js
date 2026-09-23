@@ -285,7 +285,7 @@ function markDirty() {
 }
 
 function update(dtMs) {
-  // 겹친 애들 먼저 떼어 놓는다 (속도 배수도 여기서 정해진다)
+  // 둘 다 멈춰서 겹쳐 있는 애들만 떼어 놓는다 (걷는 중이면 그냥 지나간다)
   if (relieveCrowding(pets, world, dtMs)) markDirty();
   for (const pet of pets) {
     if (pet.update(dtMs, world)) markDirty();

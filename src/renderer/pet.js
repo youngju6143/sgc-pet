@@ -73,8 +73,6 @@ export class Pet {
 
     /** 걸어갈 목적지 (없으면 update 에서 새로 고른다) */
     this.targetX = null;
-    /** 겹쳤을 때 잠깐 올라가는 속도 배수 (crowd.js 가 매 프레임 정한다) */
-    this.crowdBoost = 1;
     this.asideCooldown = 0;
 
     this.machine = createStateMachine({
@@ -247,7 +245,7 @@ export class Pet {
         this.facing = this.targetX >= this.x ? 1 : -1;
 
         const before = this.x;
-        this.x += this.facing * speed * this.scale * this.speedScale * (this.crowdBoost || 1) * dt;
+        this.x += this.facing * speed * this.scale * this.speedScale * dt;
         const maxX = Math.max(0, world.width - this.width);
 
         // 목적지를 지나쳤으면 딱 맞춰 세우고 다음 목적지를 고른다
