@@ -45,12 +45,6 @@
           "arch": [
             "arm64"
           ]
-        },
-        {
-          "target": "zip",
-          "arch": [
-            "arm64"
-          ]
         }
       ],
       "extendInfo": {
@@ -60,12 +54,17 @@
     },
     "dmg": {
       "title": "SGC Pet",
-      "artifactName": "${name}-${version}-${arch}.${ext}"
+      "artifactName": "${name}-${version}-${arch}.${ext}",
+      "format": "ULFO"
     },
     "artifactName": "${name}-${version}-${arch}.${ext}",
     "afterPack": "tools/sign-adhoc.cjs",
     "asarUnpack": [
       "**/*.node"
+    ],
+    "electronLanguages": [
+      "en-US",
+      "ko"
     ]
   },
   "overrides": {
