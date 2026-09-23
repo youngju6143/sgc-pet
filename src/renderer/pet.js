@@ -142,6 +142,11 @@ export class Pet {
     return this.machine.state;
   }
 
+  /** 지금 스스로 걸어 다니는 중인가 (겹쳐도 알아서 빠져나갈 수 있는가) */
+  get isStrolling() {
+    return !this.held && Boolean(SPEED[this.state]);
+  }
+
   /**
    * 좌우 반전 보정 (화면 픽셀).
    * 구라베처럼 꼬리가 한쪽으로 삐져나온 캐릭터는 얼굴이 스프라이트 박스 중심에서

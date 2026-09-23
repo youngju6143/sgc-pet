@@ -47,7 +47,7 @@ node tools/make-tray-icon.mjs [캐릭터id]   # assets/trayTemplate.png (+@2x)
 ## 배포용 앱 만들기
 
 ```bash
-npm run pack        # dist/sgc-pet-0.1.0-arm64.dmg (+ .zip)
+npm run pack        # dist/sgc-pet-0.1.1-arm64.dmg (+ .zip)
 ```
 
 아이콘은 캐릭터 도트에서 만든다 (`npm run icon` — `pack` 이 알아서 부른다).
