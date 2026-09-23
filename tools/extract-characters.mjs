@@ -1,6 +1,6 @@
-import fs from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   loadImage,
   boundingBox,
@@ -20,7 +20,7 @@ import {
   luma,
   KEYS,
   hex,
-} from "./extract-lib.mjs";
+} from './extract-lib.mjs';
 
 /**
  * 루트의 원본 도트 PNG 5장 → src/renderer/characters/*.js 생성.
@@ -37,12 +37,11 @@ const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
  * 예전처럼 루트에 두어도 동작하게 둘 다 본다.
  */
 function sourceFile(name) {
-  const candidates = [path.join(root, "art-source", name), path.join(root, name)];
+  const candidates = [path.join(root, 'art-source', name), path.join(root, name)];
   const found = candidates.find((f) => fs.existsSync(f));
   if (found) return found;
   throw new Error(
-    `원본 도트를 못 찾았다: ${name}\n` +
-      `art-source/ 에 넣어 주세요. (README 의 '원본 도트' 참고)`,
+    `원본 도트를 못 찾았다: ${name}\n` + `art-source/ 에 넣어 주세요. (README 의 '원본 도트' 참고)`,
   );
 }
 /** 추출 기준 높이. 실제 키는 얼굴 폭을 맞추면서 캐릭터마다 조금씩 달라진다. */
@@ -91,26 +90,26 @@ const COLORS_BY_ID = { rave: 14 };
  */
 const FACES = {
   chodang: {
-    style: "plain", // 원본 하이라이트 제거
+    style: 'plain', // 원본 하이라이트 제거
     // 원본 눈썹 패치가 좌우로 11칸/10칸이라 비뚤어 보인다 — 대칭으로 다시 찍는다
     brow: {
-      style: "bar",
-      color: "#ededed",
-      clearWith: "#3a3a3a", // 눈썹이 검은 머리 위에 있다 — 얼굴색으로 밀면 안 된다
-      over: ["#3a3a3a", "#221d24", "#7b7b7b", "#d8d8d8", "#ededed"],
+      style: 'bar',
+      color: '#ededed',
+      clearWith: '#3a3a3a', // 눈썹이 검은 머리 위에 있다 — 얼굴색으로 밀면 안 된다
+      over: ['#3a3a3a', '#221d24', '#7b7b7b', '#d8d8d8', '#ededed'],
       clear: { w: 13, h: 8 },
       dx: 10,
       dy: -10,
     },
   },
   rave: {
-    style: "plain",
+    style: 'plain',
     brow: {
-      style: "oval",
-      color: "#e0d4c8",
-      edge: "#81472f",
-      clearWith: "#dfab79", // 눈썹 주변은 주황 얼굴
-      over: ["#dfab79", "#e0d4c8", "#81472f", "#b1998a", "#a58775"],
+      style: 'oval',
+      color: '#e0d4c8',
+      edge: '#81472f',
+      clearWith: '#dfab79', // 눈썹 주변은 주황 얼굴
+      over: ['#dfab79', '#e0d4c8', '#81472f', '#b1998a', '#a58775'],
       clear: { w: 17, h: 13 },
       dx: 10.5,
       // eyeDy 로 눈이 올라간 만큼 되돌린다 — 눈두덩은 제자리
@@ -118,10 +117,10 @@ const FACES = {
     },
     // 볼이 주황 얼굴과 흰 볼털에 걸쳐 있다 — 둘 다 허용해야 온전히 찍힌다
     // 기본 위치면 눈에 겹친다 — 눈 바깥·아래로 뺀다
-    blush: { color: "#db9567", dx: 17, dy: 5, anywhere: true },
+    blush: { color: '#db9567', dx: 17, dy: 5, anywhere: true },
   },
   mangnani: {
-    style: "plain",
+    style: 'plain',
     // 눈이 원본 도트에서 한 칸 처져 있다
     eyeDy: -1,
     /**
@@ -130,20 +129,20 @@ const FACES = {
      * clear 는 원본 무늬를 밀어내는 상자 — 무늬보다 넉넉해야 자국이 안 남는다.
      */
     brow: {
-      style: "lid",
-      color: "#e2f2fd",
-      over: ["#b5dffa", "#e2f2fd", "#8fc6ee"],
+      style: 'lid',
+      color: '#e2f2fd',
+      over: ['#b5dffa', '#e2f2fd', '#8fc6ee'],
       clear: { w: 18, h: 13 },
       dx: 10.5,
       dy: -11,
     },
   },
   // 얘만 초롱초롱하게. 입은 원본 도트에서 한 칸 처져 있어 올려 준다.
-  mongsuk: { style: "sparkle", mouthDy: -1 },
+  mongsuk: { style: 'sparkle', mouthDy: -1 },
   // 안광이 순백이면 너무 튀어서 살짝 회색으로 낮춘다
   ponzoo: {
-    style: "crescent",
-    highlight: "#dcdcdc",
+    style: 'crescent',
+    highlight: '#dcdcdc',
     eyeSpread: 1,
     // 반달 윗줄을 한 칸 깎았으니(EYE_STYLES.crescent) 그만큼 내려 찍는다.
     // 안 그러면 윗변은 그대로고 아랫변만 올라와서 "위를 자른" 모양이 안 된다.
@@ -155,7 +154,7 @@ const FACES = {
      * 눈 중심에서 40px 위, 얼굴 폭 310px) 지금 얼굴 폭 68칸으로 환산했다.
      */
     // dy 는 eyeDy 만큼 되돌린 값이다 — 눈이 내려가도 이마 무늬는 제자리
-    brow: { style: "patch", color: "#eaad5a", over: ["#f5e1af", "#e8d09d"], dx: 9, dy: -13 },
+    brow: { style: 'patch', color: '#eaad5a', over: ['#f5e1af', '#e8d09d'], dx: 9, dy: -13 },
   },
 };
 
@@ -189,53 +188,53 @@ function scaleEyes(eyes, gh) {
  */
 const REFERENCE_PALETTES = {
   chodang: [
-    "#221d24", // 외곽선
-    "#3a3a3a", // 검은 털
-    "#7b7b7b", // 회색 그늘
-    "#c1c1c1", // 배 무늬
-    "#d8d8d8", // 밝은 회색
-    "#ededed", // 흰 털
-    "#f6c7b3", // 볼터치
+    '#221d24', // 외곽선
+    '#3a3a3a', // 검은 털
+    '#7b7b7b', // 회색 그늘
+    '#c1c1c1', // 배 무늬
+    '#d8d8d8', // 밝은 회색
+    '#ededed', // 흰 털
+    '#f6c7b3', // 볼터치
   ],
   rave: [
-    "#331408", // 외곽선
-    "#8f6047", // 꼬리 줄무늬 / 그늘
-    "#a67052", // 몸통 갈색
-    "#db9567", // 볼터치
-    "#dfab79", // 얼굴 주황
-    "#b1998a", // 배 무늬
-    "#e0d4c8", // 눈썹 / 주둥이
+    '#331408', // 외곽선
+    '#8f6047', // 꼬리 줄무늬 / 그늘
+    '#a67052', // 몸통 갈색
+    '#db9567', // 볼터치
+    '#dfab79', // 얼굴 주황
+    '#b1998a', // 배 무늬
+    '#e0d4c8', // 눈썹 / 주둥이
   ],
   mangnani: [
-    "#102336", // 외곽선
-    "#c99a3f", // 부리 그늘
-    "#8fc6ee", // 파랑 그늘
-    "#b5dffa", // 몸통 하늘색
-    "#f2b096", // 볼터치
-    "#f8dd94", // 부리
-    "#454b57", // 눈두덩 테두리
-    "#e2f2fd", // 배
+    '#102336', // 외곽선
+    '#c99a3f', // 부리 그늘
+    '#8fc6ee', // 파랑 그늘
+    '#b5dffa', // 몸통 하늘색
+    '#f2b096', // 볼터치
+    '#f8dd94', // 부리
+    '#454b57', // 눈두덩 테두리
+    '#e2f2fd', // 배
   ],
   mongsuk: [
-    "#2e042e", // 외곽선
-    "#8a5f93", // 보라 그늘
-    "#b890d2", // 머리 줄무늬
-    "#e7abc9", // 볼터치
-    "#e8cdfa", // 몸통 보라
-    "#f3e7fc", // 배
+    '#2e042e', // 외곽선
+    '#8a5f93', // 보라 그늘
+    '#b890d2', // 머리 줄무늬
+    '#e7abc9', // 볼터치
+    '#e8cdfa', // 몸통 보라
+    '#f3e7fc', // 배
   ],
   ponzoo: [
-    "#38200a", // 외곽선
-    "#624424", // 뿔 그늘
-    "#b48e54", // 뿔
-    "#eaad5a", // 이마 무늬 (일러스트에선 눈 위 작은 점 두 개뿐이다)
+    '#38200a', // 외곽선
+    '#624424', // 뿔 그늘
+    '#b48e54', // 뿔
+    '#eaad5a', // 이마 무늬 (일러스트에선 눈 위 작은 점 두 개뿐이다)
     // 양털 그늘. 일러스트는 평면 채색이라 이런 중간톤이 없는데, 원본 도트는
     // 이마~옆머리에 넓게 깔아 놨다. 기준색에 없으면 제일 가까운 이마 주황으로
     // 붙어서 **주황 눈썹 띠**가 생긴다 — 양털에 뿔색을 살짝 섞은 톤으로 둔다.
-    "#e8d09d",
-    "#f5e1af", // 양털
-    "#f8d6b9", // 볼터치
-    "#fdf7e3", // 얼굴
+    '#e8d09d',
+    '#f5e1af', // 양털
+    '#f8d6b9', // 볼터치
+    '#fdf7e3', // 얼굴
   ],
 };
 
@@ -244,11 +243,11 @@ const REFERENCE_PALETTES = {
  * 기준색에 더 가까워서 둘이 뒤바뀌었다. 볼터치 클러스터만 먼저 고정한다.
  */
 const BLUSH_REF = {
-  chodang: "#f6c7b3",
-  rave: "#db9567",
-  mangnani: "#f2b096",
-  mongsuk: "#e7abc9",
-  ponzoo: "#f8d6b9",
+  chodang: '#f6c7b3',
+  rave: '#db9567',
+  mangnani: '#f2b096',
+  mongsuk: '#e7abc9',
+  ponzoo: '#f8d6b9',
 };
 
 /**
@@ -257,7 +256,7 @@ const BLUSH_REF = {
  * 회색으로 붙고, 화면에선 무늬가 안 보인다.
  */
 const SNAP_ANCHORS = {
-  chodang: [{ x: 27, y: 62, color: "#c1c1c1" }], // 배 무늬
+  chodang: [{ x: 27, y: 62, color: '#c1c1c1' }], // 배 무늬
 };
 
 /** 기준색을 못 받은 색에 물리는 벌점. 웬만한 색 거리보다 커서 최후의 수단이 된다. */
@@ -271,9 +270,7 @@ function colorDistance(a, b) {
   const dr = a[0] - b[0],
     dg = a[1] - b[1],
     db = a[2] - b[2];
-  return (
-    (2 + rm / 256) * dr * dr + 4 * dg * dg + (2 + (255 - rm) / 256) * db * db
-  );
+  return (2 + rm / 256) * dr * dr + 4 * dg * dg + (2 + (255 - rm) / 256) * db * db;
 }
 
 /**
@@ -329,49 +326,47 @@ function snapPalette(id, centers, tight = new Set(), rows = []) {
   })(0, 0);
 
   // 미배정은 양자화가 뽑은 원색을 그대로 쓴다
-  return best
-    ? best.map((j, i) => (j < 0 ? hex(centers[i]) : refs[j]))
-    : centers.map(hex);
+  return best ? best.map((j, i) => (j < 0 ? hex(centers[i]) : refs[j])) : centers.map(hex);
 }
 
 export const SOURCES = [
   {
-    id: "chodang",
-    name: "강초당",
-    file: "강초당.png",
-    lines: ["한 입만?", "배고파…", "케첩 어딨어"],
+    id: 'chodang',
+    name: '강초당',
+    file: '강초당.png',
+    lines: ['냐세요~', '냠~', '히힛'],
   },
   {
-    id: "rave",
-    name: "구라베",
-    file: "구라베.png",
+    id: 'rave',
+    name: '구라베',
+    file: '구라베.png',
     // 꼬리가 오른쪽에 그려져 있다 = 왼쪽으로 걷는 그림이다. 이걸 안 알려주면
     // 오른쪽으로 갈 때 꼬리가 진행 방향 앞에 와서 꼬리를 쫓아가는 꼴이 된다.
     artFacing: -1,
-    lines: ["짐이로다"],
+    lines: ['냐세요~', '짐이로다', '웅냥ㄴㅇ냥', '오 예 쑨대~!'],
   },
   {
-    id: "mangnani",
-    name: "망난이",
-    file: "망난이.png",
-    lines: ["왜!", "뭐!", "아 진짜", "하지 마"],
+    id: 'mangnani',
+    name: '망난이',
+    file: '망난이.png',
+    lines: ['냐세요~', '흠냐리셔스', '캄사합니다?'],
   },
   {
-    id: "mongsuk",
-    name: "송몽숙",
-    file: "송몽숙.png",
-    lines: ["…5분만", "zzz", "졸려…", "깨우지 마"],
+    id: 'mongsuk',
+    name: '송몽숙',
+    file: '송몽숙.png',
+    lines: ['냐세요~', '안녕하시삽사리와요', '이야~'],
   },
   {
-    id: "ponzoo",
-    name: "장폰주",
-    file: "장폰주.png",
-    lines: ["잠깐만 이판만 하고", "한 판만 더", "…졌다", "이거 좀 어려운데"],
+    id: 'ponzoo',
+    name: '장폰주',
+    file: '장폰주.png',
+    lines: ['냐세요~', '뽀시락', '장폰주 장폰주 장폰주'],
   },
 ];
 
 /** 손으로 찍은 수정본이 놓이는 곳 (tools/pixel-editor.mjs 가 쓴다) */
-export const OVERRIDE_DIR = path.join(root, "tools", "overrides");
+export const OVERRIDE_DIR = path.join(root, 'tools', 'overrides');
 
 export function overrideFile(id) {
   return path.join(OVERRIDE_DIR, `${id}.json`);
@@ -389,9 +384,9 @@ export function overrideFile(id) {
 function applyOverride(id, rows, palette) {
   let data;
   try {
-    data = JSON.parse(fs.readFileSync(overrideFile(id), "utf8"));
+    data = JSON.parse(fs.readFileSync(overrideFile(id), 'utf8'));
   } catch (err) {
-    if (err.code !== "ENOENT") return { rows, note: `수정본을 못 읽었다 — ${err.message}` };
+    if (err.code !== 'ENOENT') return { rows, note: `수정본을 못 읽었다 — ${err.message}` };
     return { rows };
   }
   if (!data.cells?.length) return { rows };
@@ -415,23 +410,21 @@ function applyOverride(id, rows, palette) {
     return next;
   };
 
-  const grid = rows.map((r) => r.split(""));
+  const grid = rows.map((r) => r.split(''));
   let applied = 0;
   for (const [x, y, hex] of data.cells) {
     if (!grid[y] || grid[y][x] === undefined) continue;
-    const key = hex === null ? "." : keyOf(hex);
+    const key = hex === null ? '.' : keyOf(hex);
     if (!key) continue;
     grid[y][x] = key;
     applied++;
   }
-  return { rows: grid.map((r) => r.join("")), applied };
+  return { rows: grid.map((r) => r.join('')), applied };
 }
 
 const silhouetteWidth = (row) => {
   const l = row.search(/[^.]/);
-  return l < 0
-    ? 0
-    : row.length - row.split("").reverse().join("").search(/[^.]/) - l;
+  return l < 0 ? 0 : row.length - row.split('').reverse().join('').search(/[^.]/) - l;
 };
 
 export function extractOne(src, gh = TARGET_HEIGHT) {
@@ -458,7 +451,7 @@ export function extractOne(src, gh = TARGET_HEIGHT) {
   const fill = eyes ? faceKeyAround(rows, eyes.left, outline) : outline;
   eyes.fill = fill;
 
-  const face = FACES[src.id] || { style: "plain" };
+  const face = FACES[src.id] || { style: 'plain' };
 
   // 안광 색. 기본은 팔레트에서 가장 밝은 색이고, FACES 에 hex 를 적으면
   // 그 색을 팔레트에 한 칸 추가해서 쓴다 (순백이 너무 튈 때).
@@ -467,14 +460,11 @@ export function extractOne(src, gh = TARGET_HEIGHT) {
     highlight = KEYS[centers.length];
     palette[highlight] = face.highlight;
   } else {
-    highlight = centers
-      .map((c, i) => [KEYS[i], luma(c)])
-      .sort((a, b) => b[1] - a[1])[0][0];
+    highlight = centers.map((c, i) => [KEYS[i], luma(c)]).sort((a, b) => b[1] - a[1])[0][0];
   }
 
   // 무늬 색은 팔레트 글자가 아니라 hex 로 적어 둔다 — 글자는 양자화 때마다 바뀐다.
-  const keyOf = (value) =>
-    Object.keys(palette).find((k) => palette[k] === value);
+  const keyOf = (value) => Object.keys(palette).find((k) => palette[k] === value);
   const brow =
     face.brow && keyOf(face.brow.color)
       ? {
@@ -529,12 +519,12 @@ export function extractOne(src, gh = TARGET_HEIGHT) {
   // 걷기 프레임은 다리 행만 갈아끼우면 되므로 그 부분만 만들어 둔다.
   const legFrames = {
     stand: rows.slice(legs.top),
-    stepLeft: liftLeg(rows, legs, "left", 1).slice(legs.top),
-    stepRight: liftLeg(rows, legs, "right", -1).slice(legs.top),
+    stepLeft: liftLeg(rows, legs, 'left', 1).slice(legs.top),
+    stepRight: liftLeg(rows, legs, 'right', -1).slice(legs.top),
   };
   // 눈높이 행의 실루엣 폭 = 얼굴 폭. 5종을 이걸로 맞춘다.
   const eyeRow = Math.round(eyes.left.y + eyes.left.h / 2);
-  const faceWidth = silhouetteWidth(rows[eyeRow] || "");
+  const faceWidth = silhouetteWidth(rows[eyeRow] || '');
   // 얼굴 중심이 스프라이트 박스 중심과 다른 캐릭터가 있다(구라베는 꼬리 때문에
   // 2.5칸 어긋난다). 좌우 반전할 때 얼굴이 제자리에 있게 하려면 렌더러도 이 값이
   // 필요하다 — 여기서 재서 같이 구워 둔다.
@@ -601,23 +591,20 @@ export default {
   palette: {
 ${Object.entries(r.palette)
   .map(([k, v]) => `    ${k}: '${v}',`)
-  .join("\n")}
+  .join('\n')}
   },
 
   /** 서 있는 기본 프레임 (다리 포함) */
   torso: [
-${r.rows.map((row) => `    '${row}',`).join("\n")}
+${r.rows.map((row) => `    '${row}',`).join('\n')}
   ],
 
   /** 실루엣이 갈라지는 지점부터가 다리. 걷기는 이 아래 행만 갈아끼운다. */
   legTop: ${r.legs.top},
   legFrames: {
 ${Object.entries(r.legFrames)
-  .map(
-    ([k, v]) =>
-      `    ${k}: [\n${v.map((row) => `      '${row}',`).join("\n")}\n    ],`,
-  )
-  .join("\n")}
+  .map(([k, v]) => `    ${k}: [\n${v.map((row) => `      '${row}',`).join('\n')}\n    ],`)
+  .join('\n')}
   },
 
   /** 눈 감기(깜빡임/잠)용 좌표 */
@@ -635,7 +622,7 @@ ${Object.entries(r.legFrames)
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
-  const outDir = path.join(root, "src", "renderer", "characters");
+  const outDir = path.join(root, 'src', 'renderer', 'characters');
   for (const src of SOURCES) {
     const r = buildCharacter(src);
     if (r.override?.note) console.warn(`  ⚠︎ ${src.id}: ${r.override.note}`);
@@ -643,10 +630,10 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     fs.writeFileSync(path.join(outDir, `${src.id}.js`), emit(r));
     console.log(
       `${r.src.id.padEnd(9)} ${r.gw}x${r.gh}  face=${r.faceWidth}  block=${r.block}  ` +
-        `legs=${r.legs ? `top ${r.legs.top} L[${r.legs.left}] R[${r.legs.right}]` : "NOT FOUND"}  ` +
-        `eyes=${r.eyes ? `L(${r.eyes.left.x},${r.eyes.left.y} ${r.eyes.left.w}x${r.eyes.left.h}) R(${r.eyes.right.x},${r.eyes.right.y} ${r.eyes.right.w}x${r.eyes.right.h})` : "NOT FOUND"}`,
+        `legs=${r.legs ? `top ${r.legs.top} L[${r.legs.left}] R[${r.legs.right}]` : 'NOT FOUND'}  ` +
+        `eyes=${r.eyes ? `L(${r.eyes.left.x},${r.eyes.left.y} ${r.eyes.left.w}x${r.eyes.left.h}) R(${r.eyes.right.x},${r.eyes.right.y} ${r.eyes.right.w}x${r.eyes.right.h})` : 'NOT FOUND'}`,
     );
-    console.log(`          palette ${Object.values(r.palette).join(" ")}`);
+    console.log(`          palette ${Object.values(r.palette).join(' ')}`);
   }
 
   const index = `'use strict';
@@ -656,9 +643,9 @@ if (import.meta.url === `file://${process.argv[1]}`) {
  * 캐릭터 파일은 tools/extract-characters.mjs 가 원본 PNG 에서 생성한다.
  */
 
-${SOURCES.map((s) => `import ${s.id} from './${s.id}.js';`).join("\n")}
+${SOURCES.map((s) => `import ${s.id} from './${s.id}.js';`).join('\n')}
 
-export const CHARACTERS = [${SOURCES.map((s) => s.id).join(", ")}];
+export const CHARACTERS = [${SOURCES.map((s) => s.id).join(', ')}];
 
 export const CHARACTERS_BY_ID = Object.fromEntries(CHARACTERS.map((c) => [c.id, c]));
 
@@ -666,7 +653,7 @@ export function getCharacter(id) {
   return CHARACTERS_BY_ID[id] || CHARACTERS[0];
 }
 `;
-  fs.writeFileSync(path.join(outDir, "index.js"), index);
-  console.log("\nwrote", SOURCES.length, "character files + index.js");
+  fs.writeFileSync(path.join(outDir, 'index.js'), index);
+  console.log('\nwrote', SOURCES.length, 'character files + index.js');
   process.exit(0);
 }
