@@ -2,77 +2,74 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { encodePNG } from './png.mjs';
-import { getCharacter } from '../src/renderer/characters/index.js';
 
 /**
- * 메뉴바 아이콘을 캐릭터 도트에서 만든다.
- *   node tools/make-tray-icon.mjs [캐릭터id]
+ * 메뉴바 아이콘 — `ㅇㅅㅇ` 표정.
+ *   node tools/make-tray-icon.mjs
  *
- * macOS 템플릿 이미지라 색은 검정 하나뿐이고 알파만 의미가 있다 — 메뉴바
- * 밝기에 맞춰 OS 가 알아서 반전한다. 그래서 얼굴 무늬는 다 버리고 실루엣만
- * 남기고, 눈만 구멍으로 뚫어 준다. 안 뚫으면 그냥 검은 덩어리로 보인다.
+ * macOS 템플릿 이미지라 색은 의미가 없고 **알파만** 쓴다(메뉴바 밝기에 맞춰
+ * OS 가 알아서 반전한다). 그래서 캐릭터 도트를 줄여 넣으면 눈·무늬가 다 뭉개져
+ * 검은 덩어리가 된다 — 눈 두 개와 ㅅ 만 큼직하게 그리는 편이 훨씬 잘 읽힌다.
+ *
+ * 22pt 짜리 작은 그림이라 도형을 **슈퍼샘플링**해서 가장자리를 부드럽게 만든다.
  */
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
-const ch = getCharacter(process.argv[2] || 'chodang');
+const SS = 4; // 슈퍼샘플 배수
 
-/** 머리만 쓴다 — 전신을 22px 로 줄이면 뭉개져서 뭔지 알아볼 수 없다. */
-function headRows() {
-  const width = (row) => {
-    const l = row.search(/[^.]/);
-    return l < 0 ? 0 : [...row].reduce((n, c, i) => (c === '.' ? n : i), 0) - l + 1;
-  };
-  const eyeBottom = ch.eyes.left.y + ch.eyes.left.h;
-  // 눈 아래에서 실루엣이 가장 좁아지는 곳 = 목
-  let neck = eyeBottom;
-  let min = Infinity;
-  for (let y = eyeBottom + 2; y < Math.min(ch.torso.length, eyeBottom + 24); y++) {
-    const w = width(ch.torso[y]);
-    if (w < min) {
-      min = w;
-      neck = y;
-    }
-  }
-  return ch.torso.slice(0, neck);
+/** 22 기준 좌표. 실제 크기는 여기에 비례해서 키운다. */
+const BASE = 22;
+const EYE_R = 2.9;
+const EYE_Y = 10.4;
+const EYE_DX = 6.0; // 중심에서 좌우로
+const NOSE_TOP = 7.6;
+const NOSE_BOTTOM = 14.6;
+const NOSE_HALF_W = 2.9;
+const STROKE = 2.2;
+
+const inCircle = (px, py, cx, cy, r) => (px - cx) ** 2 + (py - cy) ** 2 <= r * r;
+
+/** 선분(캡슐 모양)까지의 거리로 두께 있는 획을 그린다 */
+function onSegment(px, py, x1, y1, x2, y2, thickness) {
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const len2 = dx * dx + dy * dy;
+  let t = len2 ? ((px - x1) * dx + (py - y1) * dy) / len2 : 0;
+  t = Math.max(0, Math.min(1, t));
+  const qx = x1 + t * dx;
+  const qy = y1 + t * dy;
+  return (px - qx) ** 2 + (py - qy) ** 2 <= (thickness / 2) ** 2;
 }
-
-const rows = headRows();
-const eyes = [ch.eyes.left, ch.eyes.right];
-
-const box = (() => {
-  let x0 = Infinity, x1 = -1, y0 = Infinity, y1 = -1;
-  rows.forEach((row, y) => {
-    [...row].forEach((c, x) => {
-      if (c === '.') return;
-      x0 = Math.min(x0, x); x1 = Math.max(x1, x);
-      y0 = Math.min(y0, y); y1 = Math.max(y1, y);
-    });
-  });
-  return { x0, y0, w: x1 - x0 + 1, h: y1 - y0 + 1 };
-})();
 
 /** @param {number} size 정사각 캔버스 한 변 (22 = 1x, 44 = 2x) */
 function render(size) {
-  const pad = Math.round(size * 0.09);
-  const inner = size - pad * 2;
-  const scale = Math.min(inner / box.w, inner / box.h);
-  const w = Math.round(box.w * scale);
-  const h = Math.round(box.h * scale);
-  const ox = Math.round((size - w) / 2);
-  const oy = Math.round((size - h) / 2);
+  const k = size / BASE;
+  const c = size / 2;
+  const eyeR = EYE_R * k;
+  const eyeY = EYE_Y * k;
+  const eyeDx = EYE_DX * k;
+  const apex = [c, NOSE_TOP * k];
+  const left = [c - NOSE_HALF_W * k, NOSE_BOTTOM * k];
+  const right = [c + NOSE_HALF_W * k, NOSE_BOTTOM * k];
+  const stroke = STROKE * k;
+
+  const covers = (px, py) =>
+    inCircle(px, py, c - eyeDx, eyeY, eyeR) ||
+    inCircle(px, py, c + eyeDx, eyeY, eyeR) ||
+    onSegment(px, py, apex[0], apex[1], left[0], left[1], stroke) ||
+    onSegment(px, py, apex[0], apex[1], right[0], right[1], stroke);
 
   const rgba = Buffer.alloc(size * size * 4);
-  for (let y = 0; y < h; y++) {
-    for (let x = 0; x < w; x++) {
-      // 최근접 샘플링 — 도트 그대로 줄인다
-      const sx = box.x0 + Math.floor((x + 0.5) / scale);
-      const sy = box.y0 + Math.floor((y + 0.5) / scale);
-      const c = rows[sy]?.[sx];
-      if (!c || c === '.') continue;
-      const inEye = eyes.some((e) => sx >= e.x && sx < e.x + e.w && sy >= e.y && sy < e.y + e.h);
-      if (inEye) continue; // 눈은 구멍으로 남긴다
-      const i = ((oy + y) * size + ox + x) * 4;
-      rgba[i + 3] = 255; // 검정 + 불투명. RGB 는 0 그대로.
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      let hit = 0;
+      for (let sy = 0; sy < SS; sy++) {
+        for (let sx = 0; sx < SS; sx++) {
+          if (covers(x + (sx + 0.5) / SS, y + (sy + 0.5) / SS)) hit++;
+        }
+      }
+      if (!hit) continue;
+      rgba[(y * size + x) * 4 + 3] = Math.round((hit / (SS * SS)) * 255); // 검정 + 알파
     }
   }
   return encodePNG(size, size, rgba);
@@ -80,6 +77,6 @@ function render(size) {
 
 const outDir = path.join(root, 'assets');
 fs.mkdirSync(outDir, { recursive: true });
-fs.writeFileSync(path.join(outDir, 'trayTemplate.png'), render(22));
-fs.writeFileSync(path.join(outDir, 'trayTemplate@2x.png'), render(44));
-console.log(`wrote assets/trayTemplate.png (+@2x) from ${ch.id} — 머리 ${box.w}x${box.h} 도트`);
+fs.writeFileSync(path.join(outDir, 'trayTemplate.png'), render(BASE));
+fs.writeFileSync(path.join(outDir, 'trayTemplate@2x.png'), render(BASE * 2));
+console.log('wrote assets/trayTemplate.png (+@2x) — ㅇㅅㅇ');
