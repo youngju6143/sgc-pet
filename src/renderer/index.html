@@ -21,10 +21,16 @@
         -webkit-user-select: none;
         cursor: default;
       }
+      /* 창 높이가 바뀌어도(바닥 띠 ↔ 전체 높이) 그려 둔 내용이 화면에서
+         움직이지 않게, 세 겹 모두 **아래쪽 변에 붙여** 둔다. 높이는 픽셀로
+         app.js 가 직접 넣는다 — 100% 로 두면 창이 늘어나는 순간 늘어난 만큼
+         위로 딸려 올라갔다가 다음 프레임에 제자리로 떨어진다. */
       #stage {
         display: block;
+        position: fixed;
+        left: 0;
+        bottom: 0;
         width: 100%;
-        height: 100%;
         background: transparent;
         /* 도트가 뭉개지지 않게 */
         image-rendering: pixelated;
@@ -35,8 +41,10 @@
          색은 레퍼런스에서 그대로 뽑은 Apple 시스템 컬러.
          --------------------------------------------------------------- */
       #nametags {
-        position: absolute;
-        inset: 0;
+        position: fixed;
+        left: 0;
+        bottom: 0;
+        width: 100%;
         pointer-events: none;
       }
       .nametag {
@@ -81,8 +89,10 @@
          말풍선. 공통 골격만 여기서 잡고, 색·모양은 캐릭터별로 아래에서.
          --------------------------------------------------------------- */
       #bubbles {
-        position: absolute;
-        inset: 0;
+        position: fixed;
+        left: 0;
+        bottom: 0;
+        width: 100%;
         pointer-events: none;
       }
       .bubble {
@@ -102,9 +112,12 @@
         /* 이름표 높이만큼 더 띄워서 겹치지 않게 (--bub-lift 는 app.js 가 조정) */
         transform: translate(-50%, -100%)
           translateY(calc(-11px - var(--bub-lift, 0px))) rotate(var(--bub-tilt));
-        /* 폭은 고정하고 글이 길어지면 아래로만 늘어난다 —
-           말풍선이 글자 수에 따라 좌우로 늘었다 줄었다 하면 산만하다 */
-        width: 100px;
+        /* 글자 길이에 맞춰 폭이 늘어난다. 다만 한 줄로 끝없이 길어지면
+           화면을 가로질러 버리므로, 일정 폭을 넘으면 아래로 접는다. */
+        width: max-content;
+        min-width: 44px;
+        max-width: 190px;
+        text-align: center;
         padding: 6px 11px;
         border: var(--bub-line);
         border-radius: var(--bub-radius);
@@ -220,7 +233,12 @@
       }
 
       /* 입력 중인 말풍선 — 캐릭터 색은 그대로 쓰고 캐럿만 얹는다 */
+      /* 입력 중인 말풍선만 폭을 고정한다 — 글자를 칠 때마다 풍선이
+         늘었다 줄었다 하면 커서가 따라 움직여서 치기가 힘들다. */
       .bubble--edit {
+        width: 132px;
+        max-width: 132px;
+        text-align: left;
         pointer-events: auto;
       }
       .bubble--edit input {

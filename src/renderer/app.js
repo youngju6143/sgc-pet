@@ -14,6 +14,8 @@ import { relieveCrowding } from './crowd.js';
 
 const canvas = document.getElementById('stage');
 const ctx = canvas.getContext('2d', { alpha: true });
+const nameTagLayer = document.getElementById('nametags');
+const bubbleLayer = document.getElementById('bubbles');
 
 const STEP_MS = 1000 / 60;
 const MAX_STEPS = 5;
@@ -37,6 +39,10 @@ function resizeCanvas() {
   canvas.height = Math.round(viewport.height * dpr);
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.imageSmoothingEnabled = false;
+  // 세 겹 모두 아래쪽 변에 붙어 있다 (index.html 참고). 높이만 여기서 맞춘다.
+  for (const layer of [canvas, nameTagLayer, bubbleLayer]) {
+    if (layer) layer.style.height = `${viewport.height}px`;
+  }
 
   const previousWidth = world.width;
   const previousHeight = world.height;
@@ -244,7 +250,6 @@ window.addEventListener('mousedown', (event) => {
 
   grab = { pet, startX: event.clientX, startY: event.clientY, moved: 0 };
   pet.grab(event.clientX, event.clientY, performance.now());
-  syncOverlayTall();
   markDirty();
 });
 
@@ -256,6 +261,7 @@ window.addEventListener('mousemove', (event) => {
       Math.hypot(event.clientX - grab.startX, event.clientY - grab.startY),
     );
     grab.pet.dragTo(event.clientX, event.clientY, performance.now());
+    syncOverlayTall();
     markDirty();
   }
   refreshHit();
@@ -296,13 +302,17 @@ function markDirty() {
 
 /**
  * 창 높이 전환.
- * 평소엔 바닥 띠만 덮다가, 집거나 던지는 동안에만 화면 전체 높이를 요청한다.
- * 포물선이 띠 위로 넘어가도 잘리지 않게 하려는 것.
+ * 평소엔 바닥 띠만 덮다가, 띠 위로 올라갈 일이 있을 때만 전체 높이를 요청한다.
+ *
+ * 누르자마자 늘리면 **클릭만 해도** 창이 늘었다 줄어서 애들이 우르르 떴다가
+ * 내려앉는다. 그래서 눌린 것만으로는 안 늘리고, 실제로 드래그가 시작됐거나
+ * (CLICK_SLOP 을 넘겼거나) 던져서 날아가는 중일 때만 늘린다.
  */
 let tallRequested = false;
 
 function syncOverlayTall() {
-  const need = Boolean(grab) || pets.some((pet) => pet.isHeld || pet.state === 'fall');
+  const dragging = Boolean(grab) && grab.moved >= CLICK_SLOP;
+  const need = dragging || pets.some((pet) => pet.state === 'fall');
   if (need === tallRequested) return;
   tallRequested = need;
   window.petAPI?.setOverlayTall?.(need);
