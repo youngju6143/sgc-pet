@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "스파이크 — 코어 기본 권한만",
+  "windows": ["overlay"],
+  "permissions": ["core:default"]
+}

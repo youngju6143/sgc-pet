@@ -1,0 +1,18 @@
+[package]
+name = "sgc-pet-spike"
+version = "0.0.1"
+edition = "2021"
+description = "Tauri 이식 가능성 검증용 스파이크 (SGC Pet)"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["macos-private-api"] }
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+panic = "abort"
+strip = true

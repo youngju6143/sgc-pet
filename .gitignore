@@ -9,3 +9,8 @@ art-source/
 
 # 네이티브 모듈 빌드 산출물 — npm install 이 다시 만든다
 native/build/
+
+# Tauri 스파이크 빌드 산출물
+tauri-spike/src-tauri/target/
+tauri-spike/src-tauri/gen/
+tauri-spike/*.app
