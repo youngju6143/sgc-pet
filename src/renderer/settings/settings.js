@@ -36,8 +36,11 @@ const ALIGN_CHOICES = [
 /** 저장된 설정. characters 가 비어 있으면 "전부"라는 뜻이다. */
 let settings = {
   characters: [], scale: 1, speed: 1, chatter: true, nameTags: true, noClick: false,
-  width: 1, align: 'center', launchAtLogin: false,
+  width: 1, align: 'center', display: null, launchAtLogin: false,
 };
+
+/** 지금 붙어 있는 모니터 목록 (메인이 알려준다) */
+let displays = [];
 
 const els = {
   characters: document.getElementById('characters'),
@@ -45,6 +48,7 @@ const els = {
   speed: document.getElementById('speed'),
   width: document.getElementById('width'),
   align: document.getElementById('align'),
+  displays: document.getElementById('displays'),
   nameTags: document.getElementById('nametags'),
   noClick: document.getElementById('noclick'),
   chatter: document.getElementById('chatter'),
@@ -134,6 +138,40 @@ function buildChoices(el, choices, key) {
   );
 }
 
+// --- 모니터 ----------------------------------------------------------------
+
+/**
+ * 모니터는 개수가 그때그때 달라서(케이블을 꽂고 뽑는다) 목록을 다시 받아 그린다.
+ * 한 대뿐이면 고를 게 없으니 섹션을 통째로 숨긴다.
+ */
+async function refreshDisplays() {
+  displays = (await api.displays?.()) || [];
+  const section = els.displays.closest('section');
+  if (section) section.hidden = displays.length < 2;
+
+  els.displays.replaceChildren(
+    ...displays.map((display) => {
+      const button = document.createElement('button');
+      button.className = 'choice';
+      button.type = 'button';
+      button.dataset.id = String(display.id);
+      const sub = `${display.width}×${display.height}${display.primary ? ' · 주 화면' : ''}`;
+      button.append(display.label, Object.assign(document.createElement('small'), { textContent: sub }));
+      // 주 디스플레이를 고르면 id 를 박지 않고 null 로 둔다 — 그래야 나중에
+      // 주 화면이 바뀌어도 "지금 주 화면"을 따라간다.
+      button.addEventListener('click', () => patch({ display: display.primary ? null : display.id }));
+      return button;
+    }),
+  );
+  render();
+}
+
+/** 지금 오버레이가 올라가 있는 화면 (설정값이 없거나 뽑힌 모니터면 주 화면) */
+function activeDisplayId() {
+  const picked = displays.find((d) => d.id === settings.display);
+  return (picked || displays.find((d) => d.primary))?.id;
+}
+
 // --- 그리기 ----------------------------------------------------------------
 
 function render() {
@@ -152,6 +190,10 @@ function render() {
   }
   for (const button of els.align.children) {
     button.setAttribute('aria-pressed', String(button.dataset.value === settings.align));
+  }
+  const active = activeDisplayId();
+  for (const button of els.displays.children) {
+    button.setAttribute('aria-pressed', String(Number(button.dataset.id) === active));
   }
   els.nameTags.setAttribute('aria-pressed', String(settings.nameTags !== false));
   els.noClick.setAttribute('aria-pressed', String(Boolean(settings.noClick)));
@@ -173,6 +215,9 @@ buildChoices(els.speed, SPEED_CHOICES, 'speed');
 buildChoices(els.width, WIDTH_CHOICES, 'width');
 buildChoices(els.align, ALIGN_CHOICES, 'align');
 
+// 설정 창을 보는 동안 모니터를 꽂거나 뽑을 수 있다 — 돌아올 때마다 다시 받는다
+window.addEventListener('focus', refreshDisplays);
+
 // 트레이 메뉴에서 바꾼 값도 따라간다
 api.onChanged((next) => {
   settings = next;
@@ -180,4 +225,5 @@ api.onChanged((next) => {
 });
 
 settings = (await api.get()) || settings;
+await refreshDisplays();
 render();

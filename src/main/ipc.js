@@ -1,6 +1,6 @@
 'use strict';
 
-const { app, ipcMain } = require('electron');
+const { app, ipcMain, screen } = require('electron');
 
 /**
  * preload 에서 화이트리스트한 채널만 여기서 처리한다.
@@ -44,11 +44,28 @@ function registerIpc(ctx) {
  */
 function registerSettingsIpc({ settings, closeSettingsWindow }) {
   ipcMain.handle('settings:get', () => settings.get());
+
+  /**
+   * 붙어 있는 모니터 목록. 설정 창에서 어디에 띄울지 고르는 데 쓴다.
+   * label 은 macOS 가 주는 모니터 이름("V32UE" 등)인데, 빈 문자열로 올 때가
+   * 있어서 그때는 번호로 대신한다.
+   */
+  ipcMain.handle('settings:displays', () => {
+    const primaryId = screen.getPrimaryDisplay().id;
+    return screen.getAllDisplays().map((display, index) => ({
+      id: display.id,
+      label: display.label || `디스플레이 ${index + 1}`,
+      primary: display.id === primaryId,
+      width: display.size.width,
+      height: display.size.height,
+    }));
+  });
   ipcMain.handle('settings:set', (_event, patch) => settings.merge(patch));
   ipcMain.on('settings:close', () => closeSettingsWindow());
 }
 
 function unregisterIpc() {
+  ipcMain.removeHandler('settings:displays');
   ipcMain.removeAllListeners('pet:set-interactive');
   ipcMain.removeAllListeners('pet:set-tall');
   ipcMain.removeAllListeners('pet:request-focus');

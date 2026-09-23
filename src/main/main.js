@@ -31,6 +31,16 @@ const HEADROOM = 140;
  */
 let tall = false;
 
+/**
+ * 오버레이를 올릴 디스플레이.
+ * 설정한 모니터가 지금 안 붙어 있으면 주 디스플레이로 대신한다 (설정값은 그대로 둔다).
+ */
+function targetDisplay() {
+  const { display: id } = settings.get();
+  if (id == null) return screen.getPrimaryDisplay();
+  return screen.getAllDisplays().find((d) => d.id === id) || screen.getPrimaryDisplay();
+}
+
 function bandHeight(areaHeight) {
   const { scale = 1 } = settings.get();
   return Math.min(areaHeight, Math.round(MAX_SPRITE_H * scale + HEADROOM));
@@ -46,7 +56,7 @@ function bandHeight(areaHeight) {
  * 바뀌어도 바닥이 그대로여야 펫이 제자리에 남는다.
  */
 function overlayBounds() {
-  const area = screen.getPrimaryDisplay().workArea;
+  const area = targetDisplay().workArea;
   const { width: ratio = 1, align = 'center' } = settings.get();
   const width = Math.max(240, Math.round(area.width * ratio));
   const offset =
@@ -239,7 +249,7 @@ app.whenReady().then(() => {
     for (const browserWindow of BrowserWindow.getAllWindows()) {
       if (!browserWindow.isDestroyed()) browserWindow.webContents.send('settings:changed', next);
     }
-    // 띠 너비·정렬이 바뀌면 오버레이 창 자체를 다시 잡는다
+    // 띠 너비·정렬·모니터가 바뀌면 오버레이 창 자체를 다시 잡는다
     syncOverlayBounds();
     tray?.refresh();
   });

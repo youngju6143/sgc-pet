@@ -29,6 +29,12 @@ const DEFAULTS = {
   width: 1,
   /** 그 띠를 화면 어디에 붙일지 */
   align: 'center',
+  /**
+   * 오버레이를 띄울 디스플레이 id. null 이면 주 디스플레이.
+   * 연결이 끊긴 모니터를 가리키고 있어도 값은 지우지 않는다 — 다시 꽂으면
+   * 그 모니터로 돌아가야 하고, 없는 동안만 주 디스플레이로 대신한다.
+   */
+  display: null,
   /** 로그인 시 자동 실행 (실제 적용은 OS 설정, 여기 값은 거울) */
   launchAtLogin: false,
 };
@@ -60,6 +66,7 @@ function sanitize(raw) {
   if (typeof raw.noClick === 'boolean') out.noClick = raw.noClick;
   if (WIDTHS.some((w) => Math.abs(w - raw.width) < 1e-6)) out.width = raw.width;
   if (ALIGNS.includes(raw.align)) out.align = raw.align;
+  if (raw.display === null || Number.isFinite(raw.display)) out.display = raw.display;
   if (typeof raw.launchAtLogin === 'boolean') out.launchAtLogin = raw.launchAtLogin;
   return out;
 }

@@ -11,6 +11,10 @@ contextBridge.exposeInMainWorld('settingsAPI', {
   set(patch) {
     return ipcRenderer.invoke('settings:set', patch);
   },
+  /** 지금 붙어 있는 모니터 목록 (오버레이를 띄울 화면 고르기) */
+  displays() {
+    return ipcRenderer.invoke('settings:displays');
+  },
   /** 다른 창(트레이 메뉴 등)에서 바꿨을 때 따라가기 위한 구독 */
   onChanged(handler) {
     const listener = (_event, settings) => handler(settings);
