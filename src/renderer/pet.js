@@ -11,8 +11,12 @@ const BLINK_MIN = 2200;
 const BLINK_MAX = 7000;
 const BLINK_MS = 140;
 
-/** 상태별 이동 속도 (px/s, scale 1 기준). 뽈뽈뽈 걷는 속도라 일부러 느리다. */
-const SPEED = { walk: 13, run: 28 };
+/**
+ * 상태별 이동 속도 (px/s, scale 1 기준).
+ * 뽈뽈뽈 걷는 느낌은 유지하되, 너무 느리면 몇 분을 봐도 제자리에 있는 것처럼
+ * 보인다 — 13px/s 로는 화면 한 번 횡단에 1~2분이 걸렸다.
+ */
+const SPEED = { walk: 22, run: 45 };
 
 /** 새 목적지는 현재 위치에서 최소 이만큼(띠 너비 대비) 떨어진 곳으로 고른다 */
 const WANDER_MIN_SPAN = 0.3;
