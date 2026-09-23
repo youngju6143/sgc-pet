@@ -1,11 +1,16 @@
-'use strict';
+"use strict";
 
-import { frameFor, animationFps, animationLength, animationStepDistance } from './frames.js';
-import { drawFrame } from './sprite.js';
-import { createStateMachine } from './stateMachine.js';
-import { ZZZ_FRAME, ZZZ_PALETTE, zzzPuffs } from './effects.js';
-import { createThrowTracker, step as physicsStep } from './physics.js';
-import { personalityOf } from './personality.js';
+import {
+  frameFor,
+  animationFps,
+  animationLength,
+  animationStepDistance,
+} from "./frames.js";
+import { drawFrame } from "./sprite.js";
+import { createStateMachine } from "./stateMachine.js";
+import { ZZZ_FRAME, ZZZ_PALETTE, zzzPuffs } from "./effects.js";
+import { createThrowTracker, step as physicsStep } from "./physics.js";
+import { personalityOf } from "./personality.js";
 
 const BLINK_MIN = 2200;
 const BLINK_MAX = 7000;
@@ -16,7 +21,7 @@ const BLINK_MS = 140;
  * 뽈뽈뽈 걷는 느낌은 유지하되, 너무 느리면 몇 분을 봐도 제자리에 있는 것처럼
  * 보인다 — 13px/s 로는 화면 한 번 횡단에 1~2분이 걸렸다.
  */
-const SPEED = { walk: 22, run: 45 };
+const SPEED = { walk: 15, run: 30 };
 
 /** 새 목적지는 현재 위치에서 최소 이만큼(띠 너비 대비) 떨어진 곳으로 고른다 */
 const WANDER_MIN_SPAN = 0.3;
@@ -92,7 +97,7 @@ export class Pet {
     this.squash = 1;
     this.thrower.reset();
     this.thrower.push(px, py, t);
-    this.machine.force('drag');
+    this.machine.force("drag");
   }
 
   dragTo(px, py, t) {
@@ -109,7 +114,7 @@ export class Pet {
     const v = this.thrower.velocity();
     this.vx = v.vx;
     this.vy = v.vy;
-    this.machine.force('fall');
+    this.machine.force("fall");
   }
 
   /** 던지지 않고 그냥 놓는다 (클릭이었을 때) */
@@ -171,7 +176,6 @@ export class Pet {
     return (2 * faceCx - (this.spriteWidth - 1)) * this.scale;
   }
 
-
   onStateEnter(name) {
     this.frameIndex = 0;
     this.frameTimer = 0;
@@ -180,18 +184,27 @@ export class Pet {
   }
 
   /**
-   * 겹친 상대에게서 옆으로 비킨다.
-   * 서 있거나 자고 있었으면 잠깐 걷게 해서 자리를 비워 준다.
+   * 겹친 채로 둘 다 멈춰 있을 때 자리를 비킨다.
+   *
+   * **가려던 곳이 있으면 목적지를 건드리지 않는다.** 마주칠 때마다 반대편으로
+   * 목적지를 돌려 버리면 둘이 튕겨 나기만 해서 자리가 영영 안 섞인다.
+   * 멈춰 있던 걸 다시 걷게만 해도 겹침은 풀린다.
    */
   stepAside(dir, world) {
     if (this.asideCooldown > 0) return;
     this.asideCooldown = ASIDE_COOLDOWN_MS;
-    const maxX = Math.max(0, world.width - this.width);
-    const away = dir > 0
-      ? Math.min(maxX, this.x + this.width * 1.8)
-      : Math.max(0, this.x - this.width * 1.8);
-    this.targetX = away;
-    if (!SPEED[this.state]) this.machine.force('walk', 900 + Math.random() * 700);
+    const walking = Boolean(SPEED[this.state]);
+    const hasTarget =
+      this.targetX !== null && Math.abs(this.targetX - this.x) > this.width;
+    if (!hasTarget) {
+      // 마침 목적지에 막 도착해 있던 참이면 상대 반대쪽으로 한 발 잡아 준다
+      const maxX = Math.max(0, world.width - this.width);
+      this.targetX =
+        dir > 0
+          ? Math.min(maxX, this.x + this.width * 1.8)
+          : Math.max(0, this.x - this.width * 1.8);
+    }
+    if (!walking) this.machine.force("walk", 900 + Math.random() * 700);
   }
 
   /** 지금 위치에서 충분히 떨어진 목적지를 고른다 */
@@ -226,16 +239,22 @@ export class Pet {
     let moved = 0;
     if (this.held) {
       // 위치는 dragTo 가 정한다. 화면 밖으로만 못 나가게 잡아 둔다.
-      this.x = Math.min(Math.max(this.x, -this.width * 0.3), world.width - this.width * 0.7);
-      this.y = Math.min(Math.max(this.y, -this.height * 0.2), world.groundY - this.height * 0.4);
+      this.x = Math.min(
+        Math.max(this.x, -this.width * 0.3),
+        world.width - this.width * 0.7,
+      );
+      this.y = Math.min(
+        Math.max(this.y, -this.height * 0.2),
+        world.groundY - this.height * 0.4,
+      );
       changed = true;
-    } else if (this.state === 'fall') {
+    } else if (this.state === "fall") {
       const r = physicsStep(this, dtMs, world, this.scale);
       changed = true;
-      if (r.bounced === 'floor') this.squash = 0.84;
+      if (r.bounced === "floor") this.squash = 0.84;
       if (r.settled) {
         this.squash = 0.72;
-        this.machine.force('land', LAND_MS);
+        this.machine.force("land", LAND_MS);
       }
     } else {
       // --- 자율 이동 ---
@@ -249,7 +268,10 @@ export class Pet {
         const maxX = Math.max(0, world.width - this.width);
 
         // 목적지를 지나쳤으면 딱 맞춰 세우고 다음 목적지를 고른다
-        if ((this.facing > 0 && this.x >= this.targetX) || (this.facing < 0 && this.x <= this.targetX)) {
+        if (
+          (this.facing > 0 && this.x >= this.targetX) ||
+          (this.facing < 0 && this.x <= this.targetX)
+        ) {
           this.x = this.targetX;
           this.targetX = this.chooseTarget(world);
         }
@@ -320,7 +342,13 @@ export class Pet {
     if (this.asideCooldown > 0) this.asideCooldown -= dtMs;
 
     // --- 가만히 있은 시간 (이름표 상태 점) ---
-    if (this.held || this.state === 'walk' || this.state === 'run' || this.state === 'fall' || this.state === 'land') {
+    if (
+      this.held ||
+      this.state === "walk" ||
+      this.state === "run" ||
+      this.state === "fall" ||
+      this.state === "land"
+    ) {
       if (this.idleFor > IDLE_RED_MS) changed = true;
       this.idleFor = 0;
     } else {
@@ -333,7 +361,7 @@ export class Pet {
     if (this.chatterIn > 0) this.chatterIn -= dtMs;
 
     // --- 자는 중 Zzz ---
-    if (this.state === 'sleep') {
+    if (this.state === "sleep") {
       this.zzzTimer += dtMs;
       while (this.zzzTimer >= ZZZ_STEP_MS) {
         this.zzzTimer -= ZZZ_STEP_MS;
@@ -346,7 +374,12 @@ export class Pet {
   }
 
   currentFrame() {
-    return frameFor(this.character, this.state, this.frameIndex, this.blinking > 0);
+    return frameFor(
+      this.character,
+      this.state,
+      this.frameIndex,
+      this.blinking > 0,
+    );
   }
 
   draw(ctx) {
@@ -370,7 +403,7 @@ export class Pet {
       height: sq === 1 ? undefined : h,
     });
 
-    if (this.state === 'sleep') this.drawZzz(ctx, px, py);
+    if (this.state === "sleep") this.drawZzz(ctx, px, py);
   }
 
   /**
@@ -378,9 +411,15 @@ export class Pet {
    * 'active' 녹색 / 'sleep' 주황 / 'idle' 빨강(오래 가만히)
    */
   activity() {
-    if (this.state === 'sleep') return 'sleep';
-    if (this.held || SPEED[this.state] || this.state === 'fall' || this.state === 'land') return 'active';
-    return this.idleFor > IDLE_RED_MS ? 'idle' : 'active';
+    if (this.state === "sleep") return "sleep";
+    if (
+      this.held ||
+      SPEED[this.state] ||
+      this.state === "fall" ||
+      this.state === "land"
+    )
+      return "active";
+    return this.idleFor > IDLE_RED_MS ? "idle" : "active";
   }
 
   /**
@@ -390,7 +429,8 @@ export class Pet {
   takeChatter() {
     if (this.chatterIn > 0) return null;
     this.chatterIn = CHATTER_MIN + Math.random() * (CHATTER_MAX - CHATTER_MIN);
-    if (this.held || this.state === 'sleep' || this.state === 'fall') return null;
+    if (this.held || this.state === "sleep" || this.state === "fall")
+      return null;
     const lines = this.character.lines;
     if (!lines || !lines.length) return null;
     // 같은 말을 연달아 하면 고장난 것처럼 보인다 — 한 번 다시 뽑는다
@@ -405,7 +445,8 @@ export class Pet {
   /** 말풍선을 붙일 머리 꼭대기 좌표 (화면 기준) */
   headAnchor() {
     const frame = this.currentFrame();
-    const top = this.y + this.height - this.height * this.squash + frame.dy * this.scale;
+    const top =
+      this.y + this.height - this.height * this.squash + frame.dy * this.scale;
     return { x: this.x + this.width / 2, y: top };
   }
 
@@ -418,7 +459,7 @@ export class Pet {
       ctx.save();
       ctx.globalAlpha = puff.alpha;
       drawFrame(ctx, ZZZ_FRAME, ZZZ_PALETTE, {
-        cacheKey: 'fx|zzz',
+        cacheKey: "fx|zzz",
         x: baseX + puff.dx * this.scale,
         y: baseY + puff.dy * this.scale,
         scale: this.scale,
@@ -440,13 +481,14 @@ export class Pet {
     let lx = Math.floor((px - this.x - this.flipShift) / this.scale);
     const ly = Math.floor((py - top) / this.scale);
     if (this.flipped) lx = w - 1 - lx; // 반전해서 그렸으니 좌표도 되돌린다
-    if (lx < -pad || ly < -pad || lx > w + pad || ly > this.spriteHeight + pad) return false;
+    if (lx < -pad || ly < -pad || lx > w + pad || ly > this.spriteHeight + pad)
+      return false;
 
     for (let dy = -pad; dy <= pad; dy++) {
       for (let dx = -pad; dx <= pad; dx++) {
         const row = frame.rows[ly + dy];
         const c = row && row[lx + dx];
-        if (c && c !== '.') return true;
+        if (c && c !== ".") return true;
       }
     }
     return false;
