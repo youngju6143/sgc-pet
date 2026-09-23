@@ -349,7 +349,6 @@ export const EYE_STYLES = {
   // 윗변을 꽉 채우면 눈썹처럼 보여서 사나워진다 — 모서리를 깎고 안광을 키웠다.
   crescent: [
     'EEEEEEEE',
-    'EEEEEEEE',
     'EEEEEHHE',
     'EEEEEHHE',
     'EEEEEEEE',
@@ -496,11 +495,13 @@ function clearPair(grid, faceCx, cx, cy, { w, h }, fill) {
 function stampPair(grid, art, faceCx, cx, cy, map, only, tilt = 0, avoid = null) {
   const w = art[0].length;
   const h = art.length;
-  // 미러 기준은 **스프라이트 중심**이다 (눈과 동일).
-  // 얼굴 중심을 쓰면 둘이 어긋나서, 좌우 반전할 때 무늬만 옆으로 튄다.
-  const width = grid[0].length;
-  const leftX0 = Math.round(width / 2 - cx - w / 2);
-  const rightX0 = width - leftX0 - w;
+  // 미러 기준은 **얼굴 중심**이다 — 눈을 찍는 기준과 같아야 한다.
+  // 스프라이트 중심을 쓰면 꼬리처럼 한쪽으로 삐져나온 부위가 있는 캐릭터에서
+  // 눈은 얼굴 한가운데인데 볼터치·무늬만 옆으로 밀린다(구라베는 2.5칸).
+  // 좌우 반전은 pet.js 의 flipShift 가 얼굴 중심 기준으로 보정하므로,
+  // 전부 얼굴 중심에 맞춰 두는 쪽이 앞뒤가 맞는다.
+  const leftX0 = Math.round(faceCx - cx - w / 2);
+  const rightX0 = Math.round(2 * faceCx) - (leftX0 + w - 1); // 왼쪽 상자 오른끝의 거울상
   const y0 = Math.round(cy) - (h >> 1); // dy 가 소수여도 행 인덱스는 정수여야 한다
   const paintable = (x, y) => {
     if (y < 0 || y >= grid.length || x < 0 || x >= grid[0].length) return false;

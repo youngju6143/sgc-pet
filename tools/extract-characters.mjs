@@ -118,7 +118,7 @@ const FACES = {
     },
     // 볼이 주황 얼굴과 흰 볼털에 걸쳐 있다 — 둘 다 허용해야 온전히 찍힌다
     // 기본 위치면 눈에 겹친다 — 눈 바깥·아래로 뺀다
-    blush: { dx: 17, dy: 5, anywhere: true },
+    blush: { color: "#db9567", dx: 17, dy: 5, anywhere: true },
   },
   mangnani: {
     style: "plain",
@@ -145,13 +145,17 @@ const FACES = {
     style: "crescent",
     highlight: "#dcdcdc",
     eyeSpread: 1,
+    // 반달 윗줄을 한 칸 깎았으니(EYE_STYLES.crescent) 그만큼 내려 찍는다.
+    // 안 그러면 윗변은 그대로고 아랫변만 올라와서 "위를 자른" 모양이 안 된다.
+    eyeDy: 1,
     /**
      * 이마의 둥근 주황 무늬. 원본 도트 PNG 에는 밋밋한 양털 그늘만 있고
      * 일러스트에만 있어서 눈처럼 다시 찍는다.
      * dx/dy 는 얼굴 중심·눈높이 기준 칸수 — 일러스트에서 재서(무늬 47x28px,
      * 눈 중심에서 40px 위, 얼굴 폭 310px) 지금 얼굴 폭 68칸으로 환산했다.
      */
-    brow: { style: "patch", color: "#eaad5a", over: ["#f5e1af", "#e8d09d"], dx: 9, dy: -12 },
+    // dy 는 eyeDy 만큼 되돌린 값이다 — 눈이 내려가도 이마 무늬는 제자리
+    brow: { style: "patch", color: "#eaad5a", over: ["#f5e1af", "#e8d09d"], dx: 9, dy: -13 },
   },
 };
 
@@ -484,8 +488,13 @@ export function extractOne(src, gh = TARGET_HEIGHT) {
 
   // face 를 먼저 펼친다 — 나중에 펼치면 face.highlight(hex) 가 위에서 만든
   // 팔레트 **키**를 덮어써서 비트맵에 hex 문자열이 박힌다. brow 도 마찬가지.
-  // 볼터치 색 = quantize 가 따로 고정해 둔 클러스터 (KEYS[tight])
-  const blushKey = tight.size ? KEYS[[...tight][0]] : null;
+  // 볼터치 색 = quantize 가 따로 고정해 둔 클러스터 (KEYS[tight]).
+  // 색 수를 늘린 캐릭터는 이 자동 검출이 종종 빈손으로 돌아온다 — 그때는
+  // FACES 에 적어 둔 hex 로 찾는다. 검출이 실패했다고 볼터치를 원본 도트
+  // 그대로 두면 좌우가 어긋난 채로 남는다(구라베).
+  const blushKey = tight.size
+    ? KEYS[[...tight][0]]
+    : (face.blush?.color && keyOf(face.blush.color)) || null;
   const blush = blushKey
     ? {
         key: blushKey,
