@@ -32,7 +32,8 @@
     "files": [
       "src/**/*",
       "assets/trayTemplate*.png",
-      "package.json"
+      "package.json",
+      "!native/**"
     ],
     "asar": true,
     "mac": {
@@ -62,9 +63,15 @@
       "artifactName": "${name}-${version}-${arch}.${ext}"
     },
     "artifactName": "${name}-${version}-${arch}.${ext}",
-    "afterPack": "tools/sign-adhoc.cjs"
+    "afterPack": "tools/sign-adhoc.cjs",
+    "asarUnpack": [
+      "**/*.node"
+    ]
   },
   "overrides": {
     "@noble/hashes": "^1.8.0"
+  },
+  "dependencies": {
+    "sgc-pet-stationary": "file:native"
   }
 }

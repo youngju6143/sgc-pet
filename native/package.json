@@ -1,0 +1,9 @@
+{
+  "name": "sgc-pet-stationary",
+  "version": "1.0.0",
+  "description": "NSWindow 를 Mission Control 이 안 건드리게 만드는 최소 네이티브 모듈 (macOS)",
+  "main": "index.js",
+  "os": ["darwin"],
+  "gypfile": true,
+  "license": "MIT"
+}

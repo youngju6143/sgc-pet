@@ -4,6 +4,7 @@ const { app, BrowserWindow, screen, globalShortcut } = require('electron');
 const path = require('node:path');
 const { createClickThrough } = require('./clickthrough');
 const { registerIpc, registerSettingsIpc } = require('./ipc');
+const { setStationary } = require('sgc-pet-stationary');
 const settings = require('./settings');
 const { createTray } = require('./tray');
 const { openSettingsWindow, closeSettingsWindow } = require('./settingsWindow');
@@ -73,10 +74,15 @@ function createOverlayWindow() {
 
   win.setAlwaysOnTop(true, 'screen-saver');
   win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
-  // Mission Control(F3)·Exposé 에서 이 창을 빼 둔다.
-  // 안 하면 펫이 "창 하나"로 잡혀서, 전체 보기를 누르는 순간 다른 창들과 같이
-  // 축소되어 따로 떠 버린다 — 바탕화면에 붙어 있어야 할 물건이라 어색하다.
-  win.setHiddenInMissionControl?.(true);
+  /**
+   * Mission Control(F3)·Exposé 가 이 창을 건드리지 않게 한다.
+   *
+   * 그냥 두면 펫이 "창 하나"로 잡혀서 전체 보기 때 딴 데로 끌려간다.
+   * setHiddenInMissionControl(true) 는 반대로 **숨겨** 버리므로 답이 아니다.
+   * 필요한 건 NSWindow 의 collectionBehavior 에 Stationary 를 켜는 것(Dock 이
+   * 쓰는 속성)인데 Electron 이 안 열어줘서 native/ 모듈로 직접 건드린다.
+   */
+  applyStationary();
 
   clickThrough = createClickThrough(win);
   registerIpc({
@@ -112,6 +118,15 @@ function createOverlayWindow() {
   }
 }
 
+/**
+ * 창 레벨을 다시 만지면(setAlwaysOnTop 등) macOS 가 collectionBehavior 를
+ * 되돌려 놓는 경우가 있어, 그런 자리마다 다시 켜 준다.
+ */
+function applyStationary() {
+  if (!win || win.isDestroyed()) return;
+  setStationary(win, true);
+}
+
 /** 모니터 연결/해제·해상도 변경 시 창 크기를 다시 맞춘다. */
 function syncOverlayBounds() {
   if (!win || win.isDestroyed()) return;
@@ -128,6 +143,7 @@ function syncOverlayBounds() {
   win.setBounds(next);
   // 창을 다시 잡으면 always-on-top 레벨이 풀리는 경우가 있어 재적용.
   win.setAlwaysOnTop(true, 'screen-saver');
+  applyStationary();
   clickThrough?.reset();
   win.webContents.send('pet:overlay-resized', next);
 }
@@ -152,6 +168,7 @@ function setOverlayVisible(visible) {
   if (visible) {
     win.showInactive();
     win.setAlwaysOnTop(true, 'screen-saver');
+    applyStationary();
   } else {
     win.hide();
   }
