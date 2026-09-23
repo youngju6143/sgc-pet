@@ -1,5 +1,5 @@
 {
-  "name": "yamulttak-pet",
+  "name": "sgc-pet",
   "version": "0.1.0",
   "description": "사회인 게임클럽 데스크탑 펫 (macOS / Electron)",
   "main": "src/main/main.js",
@@ -22,7 +22,7 @@
     "pngjs": "^7.0.0"
   },
   "build": {
-    "appId": "io.bworx.yamulttak-pet",
+    "appId": "io.bworx.sgc-pet",
     "productName": "SGC Pet",
     "copyright": "사회인 게임클럽",
     "directories": {
@@ -53,13 +53,12 @@
         }
       ],
       "extendInfo": {
-        "LSUIElement": true,
-        "CFBundleDisplayName": "야물딱펫"
+        "LSUIElement": true
       },
       "identity": null
     },
     "dmg": {
-      "title": "야물딱펫",
+      "title": "SGC Pet",
       "artifactName": "${name}-${version}-${arch}.${ext}"
     },
     "artifactName": "${name}-${version}-${arch}.${ext}",

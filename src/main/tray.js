@@ -31,10 +31,10 @@ function icon() {
  */
 function createTray(ctx) {
   tray = new Tray(icon());
-  tray.setToolTip('야물딱 펫 — 클릭해서 설정');
+  tray.setToolTip('SGC Pet — 클릭해서 설정');
   // 아이콘만 두면 메뉴바가 꽉 찬 노치 맥북에서 통째로 숨겨져 "아무것도 없는" 것처럼
   // 보인다. 짧은 텍스트를 같이 달아서 찾기 쉽게 한다.
-  tray.setTitle(' 야물딱');
+  tray.setTitle(' SGC');
   console.log('[tray] 메뉴바 아이콘 생성됨');
   refreshTray(ctx);
   // 아이콘을 좌클릭해도 메뉴가 뜬다 (macOS 기본은 좌클릭도 메뉴)
@@ -111,7 +111,7 @@ function refreshTray(ctx) {
         click: (item) => ctx.setSettings({ launchAtLogin: item.checked }),
       },
       { type: 'separator' },
-      { label: '야물딱 펫 종료', accelerator: 'Command+Q', click: () => app.quit() },
+      { label: 'SGC Pet 종료', accelerator: 'Command+Q', click: () => app.quit() },
     ]),
   );
 }

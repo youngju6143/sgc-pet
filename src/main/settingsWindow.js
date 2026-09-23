@@ -24,7 +24,7 @@ function openSettingsWindow() {
     height: 660,
     minWidth: 440,
     minHeight: 420,
-    title: '야물딱 펫 설정',
+    title: 'SGC Pet 설정',
     titleBarStyle: 'hiddenInset',
     backgroundColor: '#1b1d23',
     show: false,

@@ -1,4 +1,4 @@
-# yamulttak-pet
+# sgc-pet
 
 ![다섯 마리](art/lineup.png)
 
@@ -25,7 +25,7 @@ npm run dev
 ## 설정
 
 메뉴바 → **설정…** (`Cmd+,`). 고르는 즉시 저장되고 오버레이에 바로 반영된다.
-저장 위치는 `~/Library/Application Support/yamulttak-pet/settings.json`.
+저장 위치는 `~/Library/Application Support/SGC Pet/settings.json`.
 
 | 항목 | 값 |
 | --- | --- |
@@ -47,7 +47,7 @@ node tools/make-tray-icon.mjs [캐릭터id]   # assets/trayTemplate.png (+@2x)
 ## 배포용 앱 만들기
 
 ```bash
-npm run pack        # dist/yamulttak-pet-0.1.0-arm64.dmg (+ .zip)
+npm run pack        # dist/sgc-pet-0.1.0-arm64.dmg (+ .zip)
 ```
 
 아이콘은 캐릭터 도트에서 만든다 (`npm run icon` — `pack` 이 알아서 부른다).
