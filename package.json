@@ -1,6 +1,6 @@
 {
   "name": "sgc-pet",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "사회인 게임클럽 데스크탑 펫 (macOS / Electron)",
   "main": "src/main/main.js",
   "type": "commonjs",
