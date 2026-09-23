@@ -73,6 +73,10 @@ function createOverlayWindow() {
 
   win.setAlwaysOnTop(true, 'screen-saver');
   win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+  // Mission Control(F3)·Exposé 에서 이 창을 빼 둔다.
+  // 안 하면 펫이 "창 하나"로 잡혀서, 전체 보기를 누르는 순간 다른 창들과 같이
+  // 축소되어 따로 떠 버린다 — 바탕화면에 붙어 있어야 할 물건이라 어색하다.
+  win.setHiddenInMissionControl?.(true);
 
   clickThrough = createClickThrough(win);
   registerIpc({
