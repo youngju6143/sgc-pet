@@ -19,11 +19,31 @@ let resizeTimer = null;
 
 const isDev = !app.isPackaged;
 
-/** 현재 오버레이가 덮어야 할 영역 (주 디스플레이 작업영역) */
+/** 도트 1배 기준 가장 큰 캐릭터 높이 (characters/*.js 의 height 최댓값) */
+const MAX_SPRITE_H = 84;
+/** 머리 위로 이름표·말풍선이 들어갈 여유 (화면 px) */
+const HEADROOM = 140;
+
+/**
+ * 집거나 던지는 동안에만 작업영역 전체 높이로 늘린다.
+ * 평소에는 바닥 띠만 덮는다 — 투명 창은 덮은 면적만큼 GPU 표면을 잡아서,
+ * 화면 전체를 덮고 있으면 펫이 바닥에만 있어도 수십 MB 를 쓴다.
+ */
+let tall = false;
+
+function bandHeight(areaHeight) {
+  const { scale = 1 } = settings.get();
+  return Math.min(areaHeight, Math.round(MAX_SPRITE_H * scale + HEADROOM));
+}
+
 /**
  * 오버레이는 작업영역 전체가 아니라 **설정한 너비의 띠**만 덮는다.
  * 화면 전체에 펼쳐지면 펫끼리 너무 멀어져서 옹기종기 모여 있질 못한다.
  * 띠를 좁히면 클릭 통과를 신경 쓸 면적도 같이 줄어든다.
+ *
+ * 세로도 마찬가지로 바닥 띠만 덮는다. **아래쪽 변은 항상 작업영역 바닥에
+ * 붙어 있어야 한다** — 렌더러가 창 높이를 바닥선으로 쓰기 때문에, 높이가
+ * 바뀌어도 바닥이 그대로여야 펫이 제자리에 남는다.
  */
 function overlayBounds() {
   const area = screen.getPrimaryDisplay().workArea;
@@ -31,12 +51,21 @@ function overlayBounds() {
   const width = Math.max(240, Math.round(area.width * ratio));
   const offset =
     align === 'left' ? 0 : align === 'right' ? area.width - width : Math.round((area.width - width) / 2);
-  const bounds = { x: area.x + offset, y: area.y, width, height: area.height };
+  const height = tall ? area.height : bandHeight(area.height);
+  const bounds = { x: area.x + offset, y: area.y + area.height - height, width, height };
   if (isDev) {
     console.log(`[overlay] area=${area.x},${area.y} ${area.width}x${area.height}` +
-      ` ratio=${ratio.toFixed(3)} align=${align} -> ${bounds.x},${bounds.y} ${bounds.width}x${bounds.height}`);
+      ` ratio=${ratio.toFixed(3)} align=${align} tall=${tall}` +
+      ` -> ${bounds.x},${bounds.y} ${bounds.width}x${bounds.height}`);
   }
   return bounds;
+}
+
+/** 펫을 집거나 던지는 동안 창을 위로 늘린다 (렌더러가 알려준다) */
+function setOverlayTall(next) {
+  if (tall === Boolean(next)) return;
+  tall = Boolean(next);
+  syncOverlayBounds();
 }
 
 function createOverlayWindow() {
@@ -88,6 +117,7 @@ function createOverlayWindow() {
   registerIpc({
     clickThrough,
     getWindow: () => win,
+    setTall: setOverlayTall,
   });
 
   if (isDev) {
@@ -144,7 +174,11 @@ function syncOverlayBounds() {
   // 창을 다시 잡으면 always-on-top 레벨이 풀리는 경우가 있어 재적용.
   win.setAlwaysOnTop(true, 'screen-saver');
   applyStationary();
+  // 집고 있는 도중에도 창이 다시 잡힌다(띠 ↔ 전체 높이) — 그때 통과 모드로
+  // 되돌려 버리면 드래그가 끊기므로, 원래 상태를 되살려 준다.
+  const wasInteractive = clickThrough?.isInteractive();
   clickThrough?.reset();
+  if (wasInteractive) clickThrough?.setInteractive(true);
   win.webContents.send('pet:overlay-resized', next);
 }
 

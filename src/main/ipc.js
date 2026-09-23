@@ -4,11 +4,19 @@ const { app, ipcMain } = require('electron');
 
 /**
  * preload 에서 화이트리스트한 채널만 여기서 처리한다.
- * ctx = { clickThrough, getWindow }
+ * ctx = { clickThrough, getWindow, setTall }
  */
 function registerIpc(ctx) {
   ipcMain.on('pet:set-interactive', (event, value) => {
     ctx.clickThrough.setInteractive(value === true);
+  });
+
+  /**
+   * 펫을 집거나 던지는 동안만 창을 작업영역 전체 높이로 늘린다.
+   * 평소에는 바닥 띠만 덮어서 투명 창이 잡는 GPU 표면을 줄인다.
+   */
+  ipcMain.on('pet:set-tall', (_event, value) => {
+    ctx.setTall?.(value === true);
   });
 
   /**
@@ -42,6 +50,7 @@ function registerSettingsIpc({ settings, closeSettingsWindow }) {
 
 function unregisterIpc() {
   ipcMain.removeAllListeners('pet:set-interactive');
+  ipcMain.removeAllListeners('pet:set-tall');
   ipcMain.removeAllListeners('pet:request-focus');
   ipcMain.removeHandler('pet:get-bounds');
 }

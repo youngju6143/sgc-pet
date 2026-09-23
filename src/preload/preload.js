@@ -14,6 +14,13 @@ contextBridge.exposeInMainWorld('petAPI', {
   setInteractive(value) {
     ipcRenderer.send('pet:set-interactive', value === true);
   },
+  /**
+   * 펫을 집거나 던지는 동안 창을 화면 전체 높이로 늘려 달라고 알린다.
+   * 평소에는 바닥 띠만 덮는다 (투명 창 면적 = GPU 메모리).
+   */
+  setOverlayTall(value) {
+    ipcRenderer.send('pet:set-tall', value === true);
+  },
   /** 말풍선 입력창을 열 때 앱을 활성화해 키 입력을 받는다 */
   requestFocus() {
     ipcRenderer.send('pet:request-focus');

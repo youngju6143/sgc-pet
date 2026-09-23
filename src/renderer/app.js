@@ -39,6 +39,7 @@ function resizeCanvas() {
   ctx.imageSmoothingEnabled = false;
 
   const previousWidth = world.width;
+  const previousHeight = world.height;
   world.width = viewport.width;
   world.height = viewport.height;
   world.groundY = viewport.height - FLOOR_MARGIN;
@@ -46,13 +47,21 @@ function resizeCanvas() {
   // 띠가 좁아질 때 그냥 클램프하면 밖에 있던 애들이 전부 오른쪽 끝에 쌓인다.
   // 가로 위치를 **비율 그대로** 옮겨서 좁은 띠 안에도 고르게 흩어지게 한다.
   const ratio = previousWidth > 0 ? world.width / previousWidth : 1;
+  // 창의 아래쪽 변은 늘 작업영역 바닥에 붙어 있다. 그래서 높이가 늘면 창 원점이
+  // 그만큼 위로 올라간 것이고, 화면상 제자리에 남으려면 창 안 y 를 같이 내려야 한다.
+  const dy = previousHeight > 0 ? world.height - previousHeight : 0;
   for (const pet of pets) {
     if (!pet.isHeld && ratio !== 1) {
       const center = (pet.x + pet.width / 2) * ratio;
       pet.x = center - pet.width / 2;
     }
     pet.x = Math.min(Math.max(0, pet.x), Math.max(0, world.width - pet.width));
-    if (!pet.isHeld) pet.y = world.groundY - pet.height;
+    if (pet.isHeld || pet.state === 'fall') {
+      // 집혀 있거나 날아가는 중 — 바닥에 붙이면 안 된다. 좌표만 옮겨 준다.
+      pet.y += dy;
+    } else {
+      pet.y = world.groundY - pet.height;
+    }
   }
   markDirty();
 }
@@ -235,6 +244,7 @@ window.addEventListener('mousedown', (event) => {
 
   grab = { pet, startX: event.clientX, startY: event.clientY, moved: 0 };
   pet.grab(event.clientX, event.clientY, performance.now());
+  syncOverlayTall();
   markDirty();
 });
 
@@ -284,6 +294,20 @@ function markDirty() {
   dirty = true;
 }
 
+/**
+ * 창 높이 전환.
+ * 평소엔 바닥 띠만 덮다가, 집거나 던지는 동안에만 화면 전체 높이를 요청한다.
+ * 포물선이 띠 위로 넘어가도 잘리지 않게 하려는 것.
+ */
+let tallRequested = false;
+
+function syncOverlayTall() {
+  const need = Boolean(grab) || pets.some((pet) => pet.isHeld || pet.state === 'fall');
+  if (need === tallRequested) return;
+  tallRequested = need;
+  window.petAPI?.setOverlayTall?.(need);
+}
+
 function update(dtMs) {
   // 둘 다 멈춰서 겹쳐 있는 애들만 떼어 놓는다 (걷는 중이면 그냥 지나간다)
   if (relieveCrowding(pets, world, dtMs)) markDirty();
@@ -294,6 +318,7 @@ function update(dtMs) {
     const line = pet.takeChatter();
     if (line && !(chat.isOpen && chat.target === pet)) chat.say(pet, line);
   }
+  syncOverlayTall();
 }
 
 function render() {
