@@ -133,7 +133,8 @@
       .bubble::after {
         content: "";
         position: absolute;
-        left: 50%;
+        /* 가장자리에서 풍선을 안으로 밀어도 꼬리는 머리 위에 남는다 (chat.js) */
+        left: var(--bub-tail, 50%);
         bottom: -6px;
         width: 10px;
         height: 10px;
@@ -202,7 +203,7 @@
       .bubble--mongsuk::before {
         content: "";
         position: absolute;
-        left: 50%;
+        left: var(--bub-tail, 50%);
         bottom: -13px;
         width: 5px;
         height: 5px;
@@ -238,7 +239,6 @@
       .bubble--edit {
         width: 132px;
         max-width: 132px;
-        text-align: left;
         pointer-events: auto;
       }
       .bubble--edit input {

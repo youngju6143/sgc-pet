@@ -10,6 +10,10 @@
 
 const SAY_MS = 4200;
 const FADE_MS = 400;
+/** 말풍선을 화면 가장자리에서 이만큼 떼어 놓는다 */
+const EDGE = 4;
+/** 꼬리가 풍선 모서리에서 최소 이만큼은 안쪽에 있어야 한다 */
+const TAIL_INSET = 12;
 
 export function createChat({ layer, requestFocus }) {
   /** @type {{pet: object, el: HTMLElement, until: number}[]} */
@@ -26,10 +30,27 @@ export function createChat({ layer, requestFocus }) {
     return el;
   }
 
+  /**
+   * 머리 꼭대기에 말풍선을 붙인다.
+   *
+   * 폭이 글자 길이를 따라가기 때문에 가장자리의 펫이 긴 말을 하면 풍선이
+   * 화면 밖으로 잘린다. 그래서 풍선은 화면 안으로 밀어 넣고, **꼬리만**
+   * 원래 머리 위치에 남겨서 누가 한 말인지 알아볼 수 있게 한다.
+   */
   function place(el, pet) {
     const anchor = pet.headAnchor();
-    el.style.left = `${Math.round(anchor.x)}px`;
     el.style.top = `${Math.round(anchor.y)}px`;
+
+    const half = el.offsetWidth / 2;
+    const min = EDGE + half;
+    const max = window.innerWidth - EDGE - half;
+    // 풍선이 화면보다 넓으면(아주 좁은 띠) 그냥 가운데 둔다
+    const x = max < min ? window.innerWidth / 2 : Math.min(Math.max(anchor.x, min), max);
+    el.style.left = `${Math.round(x)}px`;
+
+    // 꼬리는 풍선 안에 머물러야 한다 — 모서리를 벗어나면 붙어 보이질 않는다
+    const tail = Math.min(Math.max(half + (anchor.x - x), TAIL_INSET), el.offsetWidth - TAIL_INSET);
+    el.style.setProperty('--bub-tail', `${Math.round(tail)}px`);
   }
 
   function closeEditor(commit) {
