@@ -45,3 +45,20 @@ npx @tauri-apps/cli@latest build --bundles dmg   # 첫 빌드 약 1분
 - [tauri#15471](https://github.com/tauri-apps/tauri/issues/15471) — `transparent:true` 면
   내용이 정지해 있어도 WindowServer 가 매 프레임 창 전체를 다시 합성한다는 보고.
   메인테이너도 WKWebView 레벨 문제라 못 고친다고 함. 측정 결과는 아래.
+
+## 측정 (2026-09-23, M-시리즈 맥북, 내장 레티나 2880×1864)
+
+같은 조건에서 하나씩만 띄우고 잰 값. WindowServer CPU 는 `top -l 5 -s 2` 4회 평균.
+
+| | WindowServer CPU | 메모리 |
+|---|---|---|
+| 아무것도 없음 | 45.4% | (WebKit 9MB) |
+| **Tauri 스파이크만** | 47.1% | 앱 73MB + WebKit 72MB = **약 145MB** |
+| **Electron 판만** | 43.5% | **290MB** (4프로세스 합) |
+
+- **메모리는 약 절반.** WKWebView 도 XPC 프로세스로 70MB 쯤 쓰기 때문에, "10분의 1"
+  까지는 안 간다.
+- **WindowServer CPU 차이는 측정 노이즈 안이다.** Electron 쪽이 아무것도 없을 때보다
+  낮게(43.5% < 45.4%) 나온 걸 보면 이 방법의 오차가 ±2%p 는 된다.
+  [tauri#15471](https://github.com/tauri-apps/tauri/issues/15471) 의 영향은 이 해상도로는
+  판단 못 한다 — 제대로 보려면 `sudo powermetrics --samplers gpu_power` 가 필요하다.
